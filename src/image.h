@@ -42,7 +42,6 @@ struct image {
 	GLuint handle = 0;
 
 	static const i32 Block_Size = 64;
-	std::vector<std::vector<std::future<void>>> blocks;
 	std::atomic<i32> tasks;
 	ThreadPool pool;
 
@@ -52,15 +51,9 @@ struct image {
 		u64 start = SDL_GetPerformanceCounter();
 
 		clear();
-		blocks.clear();
 
 		i32 w_blocks = width / Block_Size;
 		i32 h_blocks = height / Block_Size;
-		blocks.resize(h_blocks + 1);
-		for(auto& row : blocks) {
-			row.resize(w_blocks + 1);
-		}
-
 		i32 w_remaining = width % Block_Size;
 		i32 h_remaining = height % Block_Size;
 
@@ -76,7 +69,7 @@ struct image {
 								 width, height};
 
 				tasks++;
-				blocks[y][x] = pool.enqueue([t,this] {render_thread(t); tasks--;});
+				pool.enqueue([t,this] {render_thread(t); tasks--;});
 			}
 		}
 
@@ -103,7 +96,6 @@ struct image {
 		data = null;
 		if(handle) glDeleteTextures(1, &handle);
 		width = height = handle = 0;
-		blocks.clear();
 	}
 	~image() { destroy();}
 
