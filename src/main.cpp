@@ -75,15 +75,15 @@ int main(int, char**) {
 
 	ImGui::GetStyle().WindowRounding = 0.0f;
 
-	iv3 size = {640,480,4};
+	i32 size[3] = {640,480,4};
 	u64 time = 0;
 	
 	seed_rand();
 	scene s;
 	image result;
 
-	s.init(size);
-	result.init(size.x, size.y);
+	s.init(size[0],size[1],size[2]);
+	result.init(size[0], size[1]);
 
 	bool running = true;
 	while(running) {
@@ -115,21 +115,21 @@ int main(int, char**) {
 										  ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
     	ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-	    ImGui::InputInt3("Size",size.a);
+	    ImGui::InputInt3("Size", size);
 
 	    if(ImGui::Button("Generate")) {
 	    	s.destroy();
 	    	result.destroy();
 
-	    	s.init(size);
-	    	result.init(size.x, size.y);
+	    	s.init(size[0],size[1],size[2]);
+			result.init(size[0], size[1]);
 
 	    	time = result.render(s);
 	    }
 	    ImGui::SameLine();
 	    ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
 
-	    ImGui::Image((ImTextureID)(iptr)result.handle, {(f32)size.x,(f32)size.y});
+	    ImGui::Image((ImTextureID)(iptr)result.handle, {(f32)size[0],(f32)size[1]});
 
 	    ImGui::End();
 
