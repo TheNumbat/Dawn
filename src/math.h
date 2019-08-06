@@ -107,6 +107,7 @@ bool all_less(v3 v, f32 c);
 v2 norm(v2 v);
 v3 norm(v3 v);
 v4 norm(v4 v);
+v3 lerp(v3 min, v3 max, f32 dist);
 
 f32 dot(v2 l, v2 r);
 f32 dot(v3 l, v3 r);

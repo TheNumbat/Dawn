@@ -75,6 +75,9 @@ f32 _atan2(f32 l, f32 r) {
 f32 lerp(f32 min, f32 max, f32 dist) {
 	return (max - min) * dist + min;
 }
+v3 lerp(v3 min, v3 max, f32 dist) {
+	return (max - min) * dist + min;	
+}
 f32 clamp(f32 val, f32 min, f32 max) {
 	if(val < min) return min;
 	if(val > max) return max;
