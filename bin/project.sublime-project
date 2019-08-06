@@ -1,0 +1,40 @@
+{
+	"folders":
+	[
+		{
+			"path": ".."
+		}
+	],
+	"settings":
+	{
+		"tab_size": 4
+	},
+	"build_systems":
+	[
+		{
+			"name": "Build Dawn",
+			"shell_cmd": "ninja -C build",
+			"encoding": "UTF-8",
+			"working_dir": "${project_path}/..",
+			"file_regex": "^[.\\\\/]*([A-Z]?:?[\\w.\\\\/]+)[(:]([0-9]+)[):]([0-9]+)?:?(.*)$",
+			"variants": [
+                {
+                    "name": "Run",
+                    "shell_cmd": "pushd data && ..\\build\\dawn.exe",
+                    "encoding": "UTF-8"
+                },
+                {
+                    "name": "Debug",
+                    "shell_cmd": "devenv bin\\dawn.sln",
+                    "encoding": "UTF-8"
+                },
+                {
+                    "name": "Clean",
+                    "shell_cmd": "rm -r build/ && meson build -Dbuildtype=debugoptimized -Dwarning_level=3",
+                    "encoding": "UTF-8"
+                },
+			]
+		}
+	]
+}
+
