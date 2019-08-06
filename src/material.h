@@ -2,6 +2,7 @@
 #pragma once
 
 #include "math.h"
+#include "object.h"
 
 enum class mat : u8 {
 	none,

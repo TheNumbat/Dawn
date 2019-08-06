@@ -75,6 +75,7 @@ int main(int, char**) {
 
 	i32 size[3] = {640,480,4};
 	u64 time = 0, start = 0;
+	std::string file = "output.png";
 	
 	seed_rand();
 	scene s;

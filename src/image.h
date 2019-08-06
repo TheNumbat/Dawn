@@ -2,8 +2,12 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <threadpool.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "scene.h"
-#include "threadpool.h"
 
 struct thread_data {
 	u32* data = null;
@@ -99,6 +103,9 @@ struct image {
 	}
 	~image() { destroy();}
 
+	void write_to_file(std::string file) {
+		stbi_write_png(file.c_str(), width, height, 4, data, width * sizeof(u32));
+	}
 	void clear() {
 		memset(data, 0, width * height * sizeof(u32));	
 	}
