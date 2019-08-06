@@ -7,6 +7,10 @@ host_system = host_machine.system()
 project_dir = meson.current_source_dir()
 inc_dir 	= include_directories('deps/glad', 'deps/imgui')
 
+if host_system == 'linux'
+	assert(cc.get_id() == 'clang', 'only clang++ supported on linux')
+endif
+
 sources = [
 	'deps/imgui/imgui.cpp',
 	'deps/imgui/imgui_draw.cpp',
@@ -18,6 +22,7 @@ sources = [
 	'src/main.cpp']
 
 link = []
+args = []
 deps = []
 
 if host_system == 'windows'
@@ -34,6 +39,7 @@ elif host_system == 'linux'
 	
 	deps += dependency('sdl2')
 	link += '-ldl'
+	args += ['-fdeclspec', '-msse4.1']
 
 endif
 
@@ -41,5 +47,6 @@ executable('dawn', sources,
 	dependencies : deps,
 	include_directories : inc_dir, 
 	gui_app : true,
+	cpp_args : args,
 	link_args : link)
 

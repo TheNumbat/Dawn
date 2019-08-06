@@ -96,6 +96,7 @@ struct object {
 		trace ret;
 		switch(type) {
 		case obj::sphere: ret = s.hit(r,t); break;
+		default: assert(false);
 		}
 		ret.mat = mat;
 		return ret;
@@ -106,6 +107,7 @@ struct object {
 		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
+		default: assert(false);
 		}
 	}
 	object(const object&& _o) {
@@ -113,12 +115,14 @@ struct object {
 		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
+		default: assert(false);
 		}
 	}
 	object& operator=(object& o) {
 		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
+		default: assert(false);
 		}
 		return *this;
 	}
@@ -126,6 +130,7 @@ struct object {
 		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
+		default: assert(false);
 		}
 		return *this;
 	}
@@ -235,6 +240,7 @@ struct material {
 		switch(type) {
 		case mat::lambertian: return l.bsdf(incoming,surface);
 		case mat::metal: return m.bsdf(incoming,surface);
+		default: assert(false);
 		}
 		return {};
 	}
@@ -245,6 +251,7 @@ struct material {
 		switch(type) {
 		case mat::lambertian: l = o.l; break;
 		case mat::metal: m = o.m; break;
+		default: assert(false);
 		}
 	}
 	material(const material&& _o) {
@@ -253,6 +260,7 @@ struct material {
 		switch(type) {
 		case mat::lambertian: l = o.l; break;
 		case mat::metal: m = o.m; break;
+		default: assert(false);
 		}
 	}
 	material& operator=(material& o) {
@@ -260,6 +268,7 @@ struct material {
 		switch(type) {
 		case mat::lambertian: l = o.l; break;
 		case mat::metal: m = o.m; break;
+		default: assert(false);
 		}
 		return *this;
 	}
@@ -268,6 +277,7 @@ struct material {
 		switch(type) {
 		case mat::lambertian: l = o.l; break;
 		case mat::metal: m = o.m; break;
+		default: assert(false);
 		}
 		return *this;
 	}
