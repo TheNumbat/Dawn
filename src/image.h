@@ -184,26 +184,26 @@ struct scene {
 		} while(lensq(v) >= 1.0f);
 		return v;
 	}
-	v3 compute_pixel(v2 uv) {
-
-		v3 result;
-
-		for(i32 s = 0; s < samples; s++) {
-			
-			v2 jitter = v2(randf(),randf());
-			ray r = cam.get_ray(uv, jitter);
-
-			trace t = list.hit(r, {0.0f, FLT_MAX});
-			if(t.hit) {
-				result += 0.5f * (t.normal + v3(1.0f));
-			} else {
-				v3 unit = norm(r.dir);
-				f32 fade = 0.5f * (unit.y + 1.0f);
-				result += lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
-			}
+	v3 compute(ray r) {
+		trace t = list.hit(r, {0.001f, FLT_MAX});
+		if(t.hit) {
+			v3 out = t.pos + t.normal + random_leunit();
+			return 0.5f * compute({t.pos, out-t.pos});
 		}
 
-		return result / (f32)samples;
+		v3 unit = norm(r.dir);
+		f32 fade = 0.5f * (unit.y + 1.0f);
+		return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+	}
+	v3 pixel(v2 uv) {
+		v3 result;
+		for(i32 s = 0; s < samples; s++) {
+			v2 jitter = v2(randf(),randf());
+			ray r = cam.get_ray(uv, jitter);
+			result += compute(r);
+		}
+		result /= (f32)samples;
+		return pow(result, 1.0f / 2.2f);
 	}
 };
 
@@ -220,7 +220,7 @@ struct image {
 			for(u32 x = 0; x < width; x++) {
 				f32 u = (f32)x / width;
 
-				v3 col = s.compute_pixel({u,v});
+				v3 col = s.pixel({u,v});
 
 				(*pixel++) = (0xff << 24) | 
 							 ((u32)(255.0f * col.z) << 16) |

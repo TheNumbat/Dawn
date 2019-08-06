@@ -406,6 +406,10 @@ v4 clamp(v4 val, v4 min, v4 max) {
 	return {_mm_max_ps(_min, min.packed)};
 }
 
+v3 _pow(v3 v, f32 r) {
+	return {_pow(v.x,r),_pow(v.y,r),_pow(v.z,r)};
+}
+
 f32 lensq(v2 v) {
 	return dot(v, v);
 }
