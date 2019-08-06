@@ -134,28 +134,6 @@ struct object_list {
 	void push(object o) {objects.push_back(o);}
 };
 
-struct camera {
-
-	f32 ar;
-	iv2 dim;
-	v3 pos, lower_left, horz_step, vert_step;
-
-	void init(iv2 d) {
-		dim = d;
-		ar = (f32)dim.x / dim.y;
-		lower_left = v3(-ar,1.0f,-1.0f);
-		horz_step = v3(2.0f*ar,0.0f,0.0f);
-		vert_step = v3(0.0f,-2.0f,0.0f);
-		pos = v3();
-	}
-	ray get_ray(v2 uv, v2 jitter = {}) {
-		jitter.x /= (f32)dim.x;
-		jitter.y /= (f32)dim.y;
-		uv += jitter;
-		return {pos, lower_left + uv.x*horz_step + uv.y*vert_step - pos};
-	}
-};
-
 struct scatter {
 	bool absorbed = false;
 	ray out;
@@ -300,6 +278,43 @@ struct material {
 	material() {}
 };
 
+struct camera {
+
+	f32 ar, fov;
+	iv2 dim;
+	v3 pos, look, lower_left, horz_step, vert_step;
+
+	void init(v3 p, v3 l, iv2 d, f32 f) {
+		dim = d;
+		pos = p;
+		look = l;
+		fov = RADIANS(f);
+		ar = (f32)dim.y / dim.x;
+		
+		update();
+	}
+	void update() {
+		f32 half_w = tan(fov / 2.0f);
+		f32 half_h = ar * half_w;
+
+		v3 forward = norm(pos-look);
+		v3 right = cross(forward,v3(0.0f,1.0f,0.0f));
+		v3 up = cross(right,forward);
+
+		lower_left = pos - half_w*right + half_h*up - forward;
+
+		horz_step = 2.0f*half_w*right;
+		vert_step = -2.0f*half_h*up;
+	}
+
+	ray get_ray(v2 uv, v2 jitter = {}) {
+		jitter.x /= (f32)dim.x;
+		jitter.y /= (f32)dim.y;
+		uv += jitter;
+		return {pos, lower_left + uv.x*horz_step + uv.y*vert_step - pos};
+	}
+};
+
 struct scene {
 
 	object_list list;
@@ -313,7 +328,7 @@ struct scene {
 	scene() {}
 	void init(iv3 dim) {
 		samples = dim.z;
-		cam.init(dim.xy);
+		cam.init(v3(-2.0f,2.0f,1.0f), {}, dim.xy, 60.0f);
 
 		lamb0 = material::lambertian(v3(0.1f,0.2f,0.5f));
 		lamb1 = material::lambertian(v3(0.8f,0.8f,0.0f));
@@ -321,11 +336,11 @@ struct scene {
 		met0 = material::metal(v3(0.8f,0.6f,0.2f),0.3f);
 		di0 = material::dielectric(1.5f);
 
-		list.push(object::sphere(&lamb0, {0.0f,0.0f,-1.0f},0.5f));
-		list.push(object::sphere(&lamb1, {0.0f,-100.5f,-1.0f},100.0f));
-		list.push(object::sphere(&met0, {1.0f,0.0f,-1.0f},0.5f));
-		list.push(object::sphere(&di0, {-1.0f,0.0f,-1.0f},0.5f));
-		list.push(object::sphere(&di0, {-1.0f,0.0f,-1.0f},-0.45f));
+		list.push(object::sphere(&lamb0, {0.0f,0.0f,0.0f},0.5f));
+		list.push(object::sphere(&lamb1, {0.0f,-100.5f,0.0f},100.0f));
+		list.push(object::sphere(&met0, {1.0f,0.0f,0.0f},0.5f));
+		list.push(object::sphere(&di0, {-1.0f,0.0f,0.0f},0.5f));
+		list.push(object::sphere(&di0, {-1.0f,0.0f,0.0f},-0.49f));
 	}
 	void destroy() {
 		cam = {};
