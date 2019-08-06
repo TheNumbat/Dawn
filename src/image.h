@@ -23,6 +23,13 @@ v3 random_leunit() {
 	} while(lensq(v) >= 1.0f);
 	return v;
 }
+v3 random_ledisk() {
+	v3 v;
+	do {
+		v = 2.0f * v3(randf_cpp(),randf_cpp(),0.0f) - v3(1.0f,1.0f,0.0f);
+	} while(lensq(v) >= 1.0f);
+	return v;	
+}
 
 // TODO:
 	// finish raytracing in a weekend
@@ -280,13 +287,19 @@ struct material {
 
 struct camera {
 
-	f32 ar, fov;
+	// params
+	f32 ar, fov, aperture;
 	iv2 dim;
-	v3 pos, look, lower_left, horz_step, vert_step;
+	v3 pos, look;
 
-	void init(v3 p, v3 l, iv2 d, f32 f) {
+	// calculated
+	v3 forward, right, up;
+	v3 lower_left, horz_step, vert_step;
+
+	void init(v3 p, v3 l, iv2 d, f32 f, f32 ap) {
 		dim = d;
 		pos = p;
+		aperture = ap / 2.0f;
 		look = l;
 		fov = RADIANS(f);
 		ar = (f32)dim.y / dim.x;
@@ -297,21 +310,28 @@ struct camera {
 		f32 half_w = tan(fov / 2.0f);
 		f32 half_h = ar * half_w;
 
-		v3 forward = norm(pos-look);
-		v3 right = cross(forward,v3(0.0f,1.0f,0.0f));
-		v3 up = cross(right,forward);
+		forward = pos-look;
+		f32 focus = len(forward);
+		forward /= focus;
 
-		lower_left = pos - half_w*right + half_h*up - forward;
+		right = cross(forward,v3(0.0f,1.0f,0.0f));
+		up = cross(right,forward);
 
-		horz_step = 2.0f*half_w*right;
-		vert_step = -2.0f*half_h*up;
+		lower_left = pos - half_w*focus*right + half_h*focus*up - focus*forward;
+
+		horz_step = 2.0f*half_w*focus*right;
+		vert_step = -2.0f*half_h*focus*up;
 	}
 
 	ray get_ray(v2 uv, v2 jitter = {}) {
+		
 		jitter.x /= (f32)dim.x;
 		jitter.y /= (f32)dim.y;
 		uv += jitter;
-		return {pos, lower_left + uv.x*horz_step + uv.y*vert_step - pos};
+
+		v3 lens_pos = aperture * random_ledisk();
+		v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
+		return {offset, lower_left + uv.x*horz_step + uv.y*vert_step - offset};
 	}
 };
 
@@ -321,26 +341,43 @@ struct scene {
 	camera cam;
 	i32 samples = 1, max_depth = 10;
 
-	material lamb0, lamb1;
-	material met0;
-	material di0;
+	material lamb0, lamb1, met0, dia0;
+	std::vector<material> mats;
 
 	scene() {}
 	void init(iv3 dim) {
 		samples = dim.z;
-		cam.init(v3(-2.0f,2.0f,1.0f), {}, dim.xy, 60.0f);
+		cam.init(v3(13.0f,2.0f,3.0f), {}, dim.xy, 60.0f, 0.1f);
 
-		lamb0 = material::lambertian(v3(0.1f,0.2f,0.5f));
-		lamb1 = material::lambertian(v3(0.8f,0.8f,0.0f));
+		lamb0 = material::lambertian(v3(0.5f));
+		lamb1 = material::lambertian(v3(0.4f,0.2f,0.1f));
+		met0 = material::metal(v3(0.7f,0.6f,0.5f), 0.0f);
+		dia0 = material::dielectric(1.5f);
+		mats.reserve(1000);
 
-		met0 = material::metal(v3(0.8f,0.6f,0.2f),0.3f);
-		di0 = material::dielectric(1.5f);
+		list.push(object::sphere(&lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
+		for (i32 a = -11; a < 11; a++) {
+			for (i32 b = -11; b < 11; b++) {
+				f32 choose_mat = randf_cpp();
+				v3 center(a+0.9f*randf_cpp(),0.2f,b+0.9f*randf_cpp()); 
 
-		list.push(object::sphere(&lamb0, {0.0f,0.0f,0.0f},0.5f));
-		list.push(object::sphere(&lamb1, {0.0f,-100.5f,0.0f},100.0f));
-		list.push(object::sphere(&met0, {1.0f,0.0f,0.0f},0.5f));
-		list.push(object::sphere(&di0, {-1.0f,0.0f,0.0f},0.5f));
-		list.push(object::sphere(&di0, {-1.0f,0.0f,0.0f},-0.49f));
+				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
+					if (choose_mat < 0.8f) {
+						mats.push_back(material::lambertian(v3(randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp())));
+						list.push(object::sphere(&mats.back(), center, 0.2f));
+					} else if (choose_mat < 0.95) {
+						mats.push_back(material::metal(v3(0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp())), 0.5f*randf_cpp()));
+						list.push(object::sphere(&mats.back(), center, 0.2f));
+					} else {
+						list.push(object::sphere(&dia0, center, 0.2f));
+					}
+				}
+			}
+		}
+
+		list.push(object::sphere(&dia0, v3(0, 1, 0), 1.0));
+		list.push(object::sphere(&lamb1, v3(-4, 1, 0), 1.0));
+		list.push(object::sphere(&met0, v3(4, 1, 0), 1.0));
 	}
 	void destroy() {
 		cam = {};
