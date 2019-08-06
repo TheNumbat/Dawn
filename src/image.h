@@ -1,8 +1,10 @@
 
 #pragma once
 
-#include "math.h"
 #include <vector>
+#include <random>
+
+#include "math.h"
 
 // TODO:
 	// new vec3 class? will need for SIMD
@@ -108,6 +110,9 @@ private:
 
 struct object_list {
 	std::vector<object> objects;
+
+	void destroy() {objects.clear();}
+	~object_list() {destroy();}
 	trace hit(ray r, v2 t) {
 		trace ret;
 		f32 closest = t.y;		
@@ -126,20 +131,22 @@ struct object_list {
 struct camera {
 
 	f32 ar;
-	i32 width, height;
+	iv2 dim;
 	v3 pos, lower_left, horz_step, vert_step;
 
-	void init(i32 w, i32 h) {
-		width = w; 
-		height = h;
-		ar = (f32)width / height;
+	void init(iv2 d) {
+		dim = d;
+		ar = (f32)dim.x / dim.y;
 		lower_left = v3(-ar,1.0f,-1.0f);
 		horz_step = v3(2.0f*ar,0.0f,0.0f);
 		vert_step = v3(0.0f,-2.0f,0.0f);
 		pos = v3();
 	}
-	ray get_ray(f32 u, f32 v) {
-		return {pos, lower_left + u*horz_step + v*vert_step - pos};
+	ray get_ray(v2 uv, v2 jitter = {}) {
+		jitter.x /= (f32)dim.x;
+		jitter.y /= (f32)dim.y;
+		uv += jitter;
+		return {pos, lower_left + uv.x*horz_step + uv.y*vert_step - pos};
 	}
 };
 
@@ -147,24 +154,56 @@ struct scene {
 
 	object_list list;
 	camera cam;
+	i32 samples = 1;
 
-	void init(i32 w, i32 h) {
-		cam.init(w,h);
+	std::random_device rd;
+	std::mt19937 rand_gen;
+	std::uniform_real_distribution<f32> dis;
+
+	void init(iv3 dim) {
+		samples = dim.z;
+		cam.init(dim.xy);
+		rand_gen.seed(rd());
 		list.push(object::sphere({0.0f,0.0f,-1.0f},0.5f));
 		list.push(object::sphere({0.0f,-100.5f,-1.0f},100.0f));
 	}
-	v3 compute_pixel(f32 u, f32 v) {
+	void destroy() {
+		cam = {};
+		list.destroy();
+		samples = 1;
+	}
+	~scene() {destroy();}
 
-		ray r = cam.get_ray(u,v);
+	f32 randf() {
+		return dis(rand_gen);
+	}
+	v3 random_leunit() {
+		v3 v;
+		do {
+			v = 2.0f * v3(randf(),randf(),randf()) - v3(1.0f);
+		} while(lensq(v) >= 1.0f);
+		return v;
+	}
+	v3 compute_pixel(v2 uv) {
 
-		trace t = list.hit(r, {0.0f, FLT_MAX});
-		if(t.hit) {
-			return 0.5f * (t.normal + v3(1.0f));
+		v3 result;
+
+		for(i32 s = 0; s < samples; s++) {
+			
+			v2 jitter = v2(randf(),randf());
+			ray r = cam.get_ray(uv, jitter);
+
+			trace t = list.hit(r, {0.0f, FLT_MAX});
+			if(t.hit) {
+				result += 0.5f * (t.normal + v3(1.0f));
+			} else {
+				v3 unit = norm(r.dir);
+				f32 fade = 0.5f * (unit.y + 1.0f);
+				result += lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+			}
 		}
 
-		v3 unit = norm(r.dir);
-		f32 fade = 0.5f * (unit.y + 1.0f);
-		return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+		return result / (f32)samples;
 	}
 };
 
@@ -181,7 +220,7 @@ struct image {
 			for(u32 x = 0; x < width; x++) {
 				f32 u = (f32)x / width;
 
-				v3 col = s.compute_pixel(u,v);
+				v3 col = s.compute_pixel({u,v});
 
 				(*pixel++) = (0xff << 24) | 
 							 ((u32)(255.0f * col.z) << 16) |

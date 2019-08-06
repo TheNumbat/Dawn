@@ -75,13 +75,13 @@ int main(int, char**) {
 
 	ImGui::GetStyle().WindowRounding = 0.0f;
 
-	iv2 size = {640,480};
+	iv3 size = {640,480,4};
 	u64 time = 0;
 	
 	scene s;
 	image result;
 
-	s.init(size.x, size.y);
+	s.init(size);
 	result.init(size.x, size.y);
 
 	bool running = true;
@@ -114,11 +114,15 @@ int main(int, char**) {
 										  ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
     	ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-	    ImGui::InputInt2("Size",size.a);
+	    ImGui::InputInt3("Size",size.a);
 
 	    if(ImGui::Button("Generate")) {
+	    	s.destroy();
 	    	result.destroy();
+
+	    	s.init(size);
 	    	result.init(size.x, size.y);
+	    	
 	    	time = result.render(s);
 	    }
 	    ImGui::SameLine();
