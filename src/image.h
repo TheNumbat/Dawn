@@ -102,38 +102,10 @@ struct object {
 		return ret;
 	}
 	
-	object(const object& _o) {
-		object& o = const_cast<object&>(_o);
-		type = o.type; mat = o.mat;
-		switch(type) {
-		case obj::sphere: s = o.s; break;
-		default: assert(false);
-		}
-	}
-	object(const object&& _o) {
-		object& o = const_cast<object&>(_o);
-		type = o.type; mat = o.mat;
-		switch(type) {
-		case obj::sphere: s = o.s; break;
-		default: assert(false);
-		}
-	}
-	object& operator=(object& o) {
-		type = o.type; mat = o.mat;
-		switch(type) {
-		case obj::sphere: s = o.s; break;
-		default: assert(false);
-		}
-		return *this;
-	}
-	object& operator=(object&& o) {
-		type = o.type; mat = o.mat;
-		switch(type) {
-		case obj::sphere: s = o.s; break;
-		default: assert(false);
-		}
-		return *this;
-	}
+	object(const object& o) {memcpy(this,&o,sizeof(object));}
+	object(const object&& o) {memcpy(this,&o,sizeof(object));}
+	void operator=(const object& o) {memcpy(this,&o,sizeof(object));}
+	void operator=(const object&& o) {memcpy(this,&o,sizeof(object));}
 	object() {}
 };
 
@@ -245,42 +217,10 @@ struct material {
 		return {};
 	}
 	
-	material(const material& _o) {
-		material& o = const_cast<material&>(_o);
-		type = o.type;
-		switch(type) {
-		case mat::lambertian: l = o.l; break;
-		case mat::metal: m = o.m; break;
-		default: assert(false);
-		}
-	}
-	material(const material&& _o) {
-		material& o = const_cast<material&>(_o);
-		type = o.type;
-		switch(type) {
-		case mat::lambertian: l = o.l; break;
-		case mat::metal: m = o.m; break;
-		default: assert(false);
-		}
-	}
-	material& operator=(material& o) {
-		type = o.type;
-		switch(type) {
-		case mat::lambertian: l = o.l; break;
-		case mat::metal: m = o.m; break;
-		default: assert(false);
-		}
-		return *this;
-	}
-	material& operator=(material&& o) {
-		type = o.type;
-		switch(type) {
-		case mat::lambertian: l = o.l; break;
-		case mat::metal: m = o.m; break;
-		default: assert(false);
-		}
-		return *this;
-	}
+	material(const material& o) {memcpy(this,&o,sizeof(material));}
+	material(const material&& o) {memcpy(this,&o,sizeof(material));}
+	void operator=(const material& o) {memcpy(this,&o,sizeof(material));}
+	void operator=(const material&& o) {memcpy(this,&o,sizeof(material));}
 	material() {}
 };
 
