@@ -78,6 +78,7 @@ int main(int, char**) {
 	iv3 size = {640,480,4};
 	u64 time = 0;
 	
+	seed_rand();
 	scene s;
 	image result;
 
@@ -122,7 +123,7 @@ int main(int, char**) {
 
 	    	s.init(size);
 	    	result.init(size.x, size.y);
-	    	
+
 	    	time = result.render(s);
 	    }
 	    ImGui::SameLine();

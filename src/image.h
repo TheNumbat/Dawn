@@ -6,6 +6,24 @@
 
 #include "math.h"
 
+std::random_device rd;
+std::mt19937 rand_gen;
+std::uniform_real_distribution<f32> dis;
+
+void seed_rand() {
+	rand_gen.seed(rd());
+}
+f32 randf_cpp() {
+	return dis(rand_gen);
+}
+v3 random_leunit() {
+	v3 v;
+	do {
+		v = 2.0f * v3(randf_cpp(),randf_cpp(),randf_cpp()) - v3(1.0f);
+	} while(lensq(v) >= 1.0f);
+	return v;
+}
+
 // TODO:
 	// new vec3 class? will need for SIMD
 
@@ -14,10 +32,12 @@ struct ray {
 	v3 get(f32 t) {return pos + t * dir;}
 };
 
+struct material;
 struct trace {
 	bool hit = false;
 	f32 t = 0.0f;
 	v3 pos, normal;
+	material* mat = null;
 };
 
 struct sphere {
@@ -55,56 +75,60 @@ struct sphere {
 };
 
 enum class obj : u8 {
+	none,
 	sphere
 };
 
 struct object {
-	obj type;
+	obj type = obj::none;
+	material* mat = null;
 	union {
 		sphere s;
 	};
-	static object sphere(v3 pos, f32 rad) {
+	static object sphere(material* mat, v3 pos, f32 rad) {
 		object ret;
+		ret.mat = mat;
 		ret.type = obj::sphere;
 		ret.s = {pos,rad};
 		return ret;
 	}
 	trace hit(ray& r, v2 t) {
+		trace ret;
 		switch(type) {
-		case obj::sphere: return s.hit(r,t);
+		case obj::sphere: ret = s.hit(r,t); break;
 		}
-		return {};
+		ret.mat = mat;
+		return ret;
 	}
 	
 	object(const object& _o) {
 		object& o = const_cast<object&>(_o);
-		type = o.type;
+		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
 		}
 	}
 	object(const object&& _o) {
 		object& o = const_cast<object&>(_o);
-		type = o.type;
+		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
 		}
 	}
 	object& operator=(object& o) {
-		type = o.type;
+		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
 		}
 		return *this;
 	}
 	object& operator=(object&& o) {
-		type = o.type;
+		type = o.type; mat = o.mat;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
 		}
 		return *this;
 	}
-private:
 	object() {}
 };
 
@@ -150,22 +174,130 @@ struct camera {
 	}
 };
 
+struct scatter {
+	bool absorbed = false;
+	ray out;
+	v3 attenuation;
+};
+
+struct lambertian {
+	v3 albedo;
+
+	scatter bsdf(ray& incoming, trace& surface) {
+		scatter ret;
+		v3 out = surface.pos + surface.normal + random_leunit();
+		ret.out = {surface.pos, out - surface.pos};
+		ret.attenuation = albedo;
+		ret.absorbed = false;
+		return ret;
+	}
+};
+
+struct metal {
+	v3 albedo;
+	f32 rough = 0.0f;
+
+	scatter bsdf(ray& incoming, trace& surface) {
+		scatter ret;
+		v3 r = reflect(norm(incoming.dir),surface.normal);
+		ret.out = {surface.pos, r + rough * random_leunit()};
+		ret.attenuation = albedo;
+		ret.absorbed = dot(r, surface.normal) <= 0.0f;
+		return ret;
+	}
+};
+
+enum class mat : u8 {
+	none,
+	lambertian,
+	metal
+};
+
+struct material {
+	mat type = mat::none;
+	union {
+		lambertian l;
+		metal m;
+	};
+	static material lambertian(v3 albedo) {
+		material ret;
+		ret.type = mat::lambertian;
+		ret.l = {albedo};
+		return ret;
+	}
+	static material metal(v3 albedo, f32 rough) {
+		material ret;
+		ret.type = mat::metal;
+		ret.m = {albedo, rough};
+		return ret;
+	}
+	scatter bsdf(ray& incoming, trace& surface) {
+		switch(type) {
+		case mat::lambertian: return l.bsdf(incoming,surface);
+		case mat::metal: return m.bsdf(incoming,surface);
+		}
+		return {};
+	}
+	
+	material(const material& _o) {
+		material& o = const_cast<material&>(_o);
+		type = o.type;
+		switch(type) {
+		case mat::lambertian: l = o.l; break;
+		case mat::metal: m = o.m; break;
+		}
+	}
+	material(const material&& _o) {
+		material& o = const_cast<material&>(_o);
+		type = o.type;
+		switch(type) {
+		case mat::lambertian: l = o.l; break;
+		case mat::metal: m = o.m; break;
+		}
+	}
+	material& operator=(material& o) {
+		type = o.type;
+		switch(type) {
+		case mat::lambertian: l = o.l; break;
+		case mat::metal: m = o.m; break;
+		}
+		return *this;
+	}
+	material& operator=(material&& o) {
+		type = o.type;
+		switch(type) {
+		case mat::lambertian: l = o.l; break;
+		case mat::metal: m = o.m; break;
+		}
+		return *this;
+	}
+	material() {}
+};
+
 struct scene {
 
 	object_list list;
 	camera cam;
-	i32 samples = 1;
+	i32 samples = 1, max_depth = 50;
 
-	std::random_device rd;
-	std::mt19937 rand_gen;
-	std::uniform_real_distribution<f32> dis;
+	material lamb0, lamb1;
+	material met0, met1;
 
+	scene() {}
 	void init(iv3 dim) {
 		samples = dim.z;
 		cam.init(dim.xy);
-		rand_gen.seed(rd());
-		list.push(object::sphere({0.0f,0.0f,-1.0f},0.5f));
-		list.push(object::sphere({0.0f,-100.5f,-1.0f},100.0f));
+
+		lamb0 = material::lambertian(v3(0.8f,0.3f,0.3f));
+		lamb1 = material::lambertian(v3(0.8f,0.8f,0.0f));
+
+		met0 = material::metal(v3(0.8f,0.6f,0.2f),0.3f);
+		met1 = material::metal(v3(0.8f,0.8f,0.8f),1.0f);
+
+		list.push(object::sphere(&lamb0, {0.0f,0.0f,-1.0f},0.5f));
+		list.push(object::sphere(&lamb1, {0.0f,-100.5f,-1.0f},100.0f));
+		list.push(object::sphere(&met0, {1.0f,0.0f,-1.0f},0.5f));
+		list.push(object::sphere(&met1, {-1.0f,0.0f,-1.0f},0.5f));
 	}
 	void destroy() {
 		cam = {};
@@ -174,21 +306,16 @@ struct scene {
 	}
 	~scene() {destroy();}
 
-	f32 randf() {
-		return dis(rand_gen);
-	}
-	v3 random_leunit() {
-		v3 v;
-		do {
-			v = 2.0f * v3(randf(),randf(),randf()) - v3(1.0f);
-		} while(lensq(v) >= 1.0f);
-		return v;
-	}
-	v3 compute(ray r) {
+	v3 compute(ray r, i32 depth = 0) {
 		trace t = list.hit(r, {0.001f, FLT_MAX});
 		if(t.hit) {
-			v3 out = t.pos + t.normal + random_leunit();
-			return 0.5f * compute({t.pos, out-t.pos});
+			if(depth >= max_depth) return v3();
+
+			scatter s = t.mat->bsdf(r, t);
+
+			if(s.absorbed) return v3();
+
+			return s.attenuation * compute(s.out, depth+1);
 		}
 
 		v3 unit = norm(r.dir);
@@ -198,7 +325,7 @@ struct scene {
 	v3 pixel(v2 uv) {
 		v3 result;
 		for(i32 s = 0; s < samples; s++) {
-			v2 jitter = v2(randf(),randf());
+			v2 jitter = v2(randf_cpp(),randf_cpp());
 			ray r = cam.get_ray(uv, jitter);
 			result += compute(r);
 		}

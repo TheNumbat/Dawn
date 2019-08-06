@@ -109,6 +109,7 @@ v3 norm(v3 v);
 v4 norm(v4 v);
 
 v3 lerp(v3 min, v3 max, f32 dist);
+v3 reflect(v3 v, v3 r);
 v3 _pow(v3 v, f32 r);
 
 f32 dot(v2 l, v2 r);
