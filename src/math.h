@@ -139,3 +139,7 @@ v3 random_ledisk() {
 	return v;	
 }
 
+struct ray {
+	v3 pos, dir;
+	v3 get(f32 t) {return pos + t * dir;}
+};

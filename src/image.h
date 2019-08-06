@@ -18,8 +18,6 @@ struct thread_data {
 
 bool render_thread(thread_data data) {
 
-	std::cout << "block:(" << data.x << "," << data.y << "):(" << data.x + data.w << "," << data.y + data.h << ")" << std::endl;
-
 	for(int y = data.y; y < data.y + data.h; y++) {
 		f32 v = (f32)y / data.total_h;
 
@@ -46,10 +44,11 @@ struct image {
 	GLuint handle = 0;
 
 	static const i32 Block_Size = 64;
-	std::atomic<i32> tasks;
+	std::atomic<i32> tasks_complete;
+	i32 total_tasks = 0;
 	ThreadPool pool;
 
-	image() : tasks(-1), pool(SDL_GetCPUCount()) {}
+	image() : tasks_complete(-1), pool(SDL_GetCPUCount()) {}
 	u64 begin_render(scene& s) {
 
 		u64 start = SDL_GetPerformanceCounter();
@@ -61,9 +60,9 @@ struct image {
 		i32 w_remaining = width % Block_Size;
 		i32 h_remaining = height % Block_Size;
 
-		std::cout << w_blocks + 1 << "x" << h_blocks + 1 << std::endl;
+		tasks_complete = 0;
+		total_tasks = 0;
 
-		tasks++;
 		for(i32 y = 0; y <= h_blocks; y++) {
 			for(i32 x = 0; x <= w_blocks; x++) {
 
@@ -72,8 +71,8 @@ struct image {
 								 y == h_blocks ? h_remaining : Block_Size, 
 								 width, height};
 
-				tasks++;
-				pool.enqueue([t,this] {render_thread(t); tasks--;});
+				total_tasks++;
+				pool.enqueue([t,this] {render_thread(t); tasks_complete++;});
 			}
 		}
 
@@ -81,11 +80,17 @@ struct image {
 	}
 	bool finish() {
 		commit();
-		if(tasks.load() == 0) {
-			tasks--;
+		if(tasks_complete.load() == total_tasks) {
+			tasks_complete = -1;
 			return true;
 		}
 		return false;
+	}
+	bool in_progress() {
+		return tasks_complete.load() != -1;
+	}
+	f32 progress() {
+		return (f32)tasks_complete.load() / total_tasks;
 	}
 
 	void init(u32 w, u32 h) {

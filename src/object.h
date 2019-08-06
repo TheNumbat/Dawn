@@ -5,11 +5,6 @@
 
 #include <vector>
 
-struct ray {
-	v3 pos, dir;
-	v3 get(f32 t) {return pos + t * dir;}
-};
-
 struct material;
 struct trace {
 	bool hit = false;

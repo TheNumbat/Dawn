@@ -76,6 +76,7 @@ int main(int, char**) {
 	i32 size[3] = {640,480,4};
 	u64 time = 0, start = 0;
 	std::string file = "output.png";
+	file.resize(100);
 	
 	seed_rand();
 	scene s;
@@ -115,6 +116,11 @@ int main(int, char**) {
 
     	ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
 	    ImGui::InputInt3("Size", size);
+	    ImGui::InputText("##file",(char*)file.c_str(),file.size());
+	    ImGui::SameLine();
+	    if(ImGui::Button("Save")) {
+	    	result.write_to_file(file);
+	    }
 
 	    if(ImGui::Button("Generate")) {
 	    	s.destroy();
@@ -125,13 +131,16 @@ int main(int, char**) {
 
 	    	start = result.begin_render(s);
 	    }
+    	ImGui::SameLine();
+	    if(result.in_progress()) {
+	    	ImGui::ProgressBar(result.progress());
+	    } else {
+	    	ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
+	    }
 	    if(result.finish()) {
 	    	u64 end = SDL_GetPerformanceCounter();
 	    	time = end - start;
 	    }
-
-	    ImGui::SameLine();
-	    ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
 
 	    ImGui::Image((ImTextureID)(iptr)result.handle, {(f32)size[0],(f32)size[1]});
 
