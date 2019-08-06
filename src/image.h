@@ -76,7 +76,7 @@ struct image {
 								 width, height};
 
 				tasks++;
-				blocks[y][x] = pool.enqueue([t,this] {render_thread(t); commit(); tasks--;});
+				blocks[y][x] = pool.enqueue([t,this] {render_thread(t); tasks--;});
 			}
 		}
 
