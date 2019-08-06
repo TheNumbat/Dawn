@@ -60,7 +60,7 @@ struct scene {
 
 	object_list list;
 	camera cam;
-	i32 samples = 1, max_depth = 10;
+	i32 samples = 1, max_depth = 5;
 
 	material lamb0, lamb1, met0, dia0;
 	std::vector<material> mats;
@@ -74,7 +74,8 @@ struct scene {
 		lamb1 = material::lambertian(v3(0.4f,0.2f,0.1f));
 		met0 = material::metal(v3(0.7f,0.6f,0.5f), 0.0f);
 		dia0 = material::dielectric(1.5f);
-		mats.reserve(1000);
+		mats.clear();
+		mats.resize(500);
 
 		list.push(object::sphere(&lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
 		for (i32 a = -11; a < 11; a++) {
@@ -103,6 +104,7 @@ struct scene {
 	void destroy() {
 		cam = {};
 		list.destroy();
+		mats.clear();
 		samples = 1;
 	}
 	~scene() {destroy();}

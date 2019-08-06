@@ -37,7 +37,7 @@ if host_system == 'windows'
 elif host_system == 'linux'
 	
 	deps += dependency('sdl2')
-	link += '-ldl'
+	link += ['-ldl', '-pthread']
 	args += ['-fdeclspec', '-msse4.1']
 
 endif

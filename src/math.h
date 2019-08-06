@@ -5,7 +5,9 @@
 #include <math.h>
 #include <random>
 
+#ifdef _MSC_VER
 #pragma warning(disable : 4201)
+#endif
 
 std::random_device rd;
 std::mt19937 rand_gen;

@@ -6,11 +6,9 @@
 #include <imgui_impl_opengl3.h>
 
 #include <iostream>
+
 #include "basic.h"
 #include "image.h"
-
-#pragma warning(disable : 4201)
-#define OSTREAM_OPS
 #include "math.h"
 
 SDL_Window* window = nullptr;
@@ -76,7 +74,7 @@ int main(int, char**) {
 	ImGui::GetStyle().WindowRounding = 0.0f;
 
 	i32 size[3] = {640,480,4};
-	u64 time = 0;
+	u64 time = 0, start = 0;
 	
 	seed_rand();
 	scene s;
@@ -124,8 +122,13 @@ int main(int, char**) {
 	    	s.init(size[0],size[1],size[2]);
 			result.init(size[0], size[1]);
 
-	    	time = result.render(s);
+	    	start = result.begin_render(s);
 	    }
+	    if(result.finish()) {
+	    	u64 end = SDL_GetPerformanceCounter();
+	    	time = end - start;
+	    }
+
 	    ImGui::SameLine();
 	    ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
 
