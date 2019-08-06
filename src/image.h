@@ -25,7 +25,12 @@ v3 random_leunit() {
 }
 
 // TODO:
-	// new vec3 class? will need for SIMD
+	// finish raytracing in a weekend
+	// split into files
+	// new vec3 class
+	// threading
+	// SIMD
+	// start PBRT book
 
 struct ray {
 	v3 pos, dir;
@@ -165,7 +170,6 @@ struct lambertian {
 		v3 out = surface.pos + surface.normal + random_leunit();
 		ret.out = {surface.pos, out - surface.pos};
 		ret.attenuation = albedo;
-		ret.absorbed = false;
 		return ret;
 	}
 };
@@ -184,10 +188,74 @@ struct metal {
 	}
 };
 
+struct dielectric {
+
+	f32 index = 1.0f;
+
+	struct refract_ {
+		bool internal = true;
+		v3 out;
+	};
+	refract_ refract(v3 v, v3 n, f32 iout_iin) {
+		refract_ ret;
+		v3 in = norm(v);
+		f32 ct = dot(in, n);
+		f32 d = 1.0f - iout_iin*iout_iin*(1.0f - ct*ct);
+		if(d > 0.0f) {
+			ret.internal = false;
+			ret.out = iout_iin*(in - ct*n) - n*sqrtf(d);
+		}
+		return ret;
+	}
+
+	f32 schlick(f32 cos) {
+		f32 r = (1.0f - index) / (1.0f + index);
+		r *= r;
+		return r + (1.0f - r) * pow(1.0f - cos, 5.0f);
+	}
+
+	scatter bsdf(ray& incoming, trace& surface) {
+		
+		scatter ret;
+		v3 reflected = reflect(incoming.dir,surface.normal);
+		
+		v3 n_out;
+		f32 iout_iin, cos;
+
+		f32 idn = dot(norm(incoming.dir),surface.normal);
+		if(idn > 0.0f) {
+			iout_iin = index;
+			n_out = -surface.normal;
+			cos = index * idn;
+		} else {
+			iout_iin = 1.0f / index;
+			n_out = surface.normal;
+			cos = -idn;
+		}
+
+		f32 refract_prob;
+		refract_ refracted = refract(incoming.dir,n_out,iout_iin);
+		if(!refracted.internal) {
+			refract_prob = schlick(cos);
+		} else {
+			refract_prob = 1.0f;
+		}
+
+		if(randf_cpp() < refract_prob) {
+			ret.out = {surface.pos, reflected};
+		} else {
+			ret.out = {surface.pos, refracted.out};
+		}
+		ret.attenuation = v3(1.0f);
+		return ret;
+	}
+};
+
 enum class mat : u8 {
 	none,
 	lambertian,
-	metal
+	metal,
+	dielectric
 };
 
 struct material {
@@ -195,6 +263,7 @@ struct material {
 	union {
 		lambertian l;
 		metal m;
+		dielectric d;
 	};
 	static material lambertian(v3 albedo) {
 		material ret;
@@ -208,10 +277,17 @@ struct material {
 		ret.m = {albedo, rough};
 		return ret;
 	}
+	static material dielectric(f32 index) {
+		material ret;
+		ret.type = mat::dielectric;
+		ret.d = {index};
+		return ret;
+	}
 	scatter bsdf(ray& incoming, trace& surface) {
 		switch(type) {
 		case mat::lambertian: return l.bsdf(incoming,surface);
 		case mat::metal: return m.bsdf(incoming,surface);
+		case mat::dielectric: return d.bsdf(incoming,surface);
 		default: assert(false);
 		}
 		return {};
@@ -228,26 +304,28 @@ struct scene {
 
 	object_list list;
 	camera cam;
-	i32 samples = 1, max_depth = 50;
+	i32 samples = 1, max_depth = 10;
 
 	material lamb0, lamb1;
-	material met0, met1;
+	material met0;
+	material di0;
 
 	scene() {}
 	void init(iv3 dim) {
 		samples = dim.z;
 		cam.init(dim.xy);
 
-		lamb0 = material::lambertian(v3(0.8f,0.3f,0.3f));
+		lamb0 = material::lambertian(v3(0.1f,0.2f,0.5f));
 		lamb1 = material::lambertian(v3(0.8f,0.8f,0.0f));
 
 		met0 = material::metal(v3(0.8f,0.6f,0.2f),0.3f);
-		met1 = material::metal(v3(0.8f,0.8f,0.8f),1.0f);
+		di0 = material::dielectric(1.5f);
 
 		list.push(object::sphere(&lamb0, {0.0f,0.0f,-1.0f},0.5f));
 		list.push(object::sphere(&lamb1, {0.0f,-100.5f,-1.0f},100.0f));
 		list.push(object::sphere(&met0, {1.0f,0.0f,-1.0f},0.5f));
-		list.push(object::sphere(&met1, {-1.0f,0.0f,-1.0f},0.5f));
+		list.push(object::sphere(&di0, {-1.0f,0.0f,-1.0f},0.5f));
+		list.push(object::sphere(&di0, {-1.0f,0.0f,-1.0f},-0.45f));
 	}
 	void destroy() {
 		cam = {};
