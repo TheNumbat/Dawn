@@ -74,13 +74,15 @@ struct object {
 		return {};
 	}
 	
-	object(object& o) {
+	object(const object& _o) {
+		object& o = const_cast<object&>(_o);
 		type = o.type;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
 		}
 	}
-	object(object&& o) {
+	object(const object&& _o) {
+		object& o = const_cast<object&>(_o);
 		type = o.type;
 		switch(type) {
 		case obj::sphere: s = o.s; break;
@@ -118,46 +120,68 @@ struct object_list {
 		}
 		return ret;
 	}
+	void push(object o) {objects.push_back(o);}
 };
 
-v3 compute(ray r, object_list& list) {
+struct camera {
 
-	trace t = list.hit(r, {0.0f, FLT_MAX});
-	if(t.hit) {
-		return 0.5f * (t.normal + v3(1.0f));
+	f32 ar;
+	i32 width, height;
+	v3 pos, lower_left, horz_step, vert_step;
+
+	void init(i32 w, i32 h) {
+		width = w; 
+		height = h;
+		ar = (f32)width / height;
+		lower_left = v3(-ar,1.0f,-1.0f);
+		horz_step = v3(2.0f*ar,0.0f,0.0f);
+		vert_step = v3(0.0f,-2.0f,0.0f);
+		pos = v3();
 	}
+	ray get_ray(f32 u, f32 v) {
+		return {pos, lower_left + u*horz_step + v*vert_step - pos};
+	}
+};
 
-	v3 unit = norm(r.dir);
-	f32 fade = 0.5f * (unit.y + 1.0f);
-	return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
-}
+struct scene {
+
+	object_list list;
+	camera cam;
+
+	void init(i32 w, i32 h) {
+		cam.init(w,h);
+		list.push(object::sphere({0.0f,0.0f,-1.0f},0.5f));
+		list.push(object::sphere({0.0f,-100.5f,-1.0f},100.0f));
+	}
+	v3 compute_pixel(f32 u, f32 v) {
+
+		ray r = cam.get_ray(u,v);
+
+		trace t = list.hit(r, {0.0f, FLT_MAX});
+		if(t.hit) {
+			return 0.5f * (t.normal + v3(1.0f));
+		}
+
+		v3 unit = norm(r.dir);
+		f32 fade = 0.5f * (unit.y + 1.0f);
+		return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+	}
+};
 
 struct image {
 	
-	u64 render() {
+	u64 render(scene& s) {
 		u64 start = SDL_GetPerformanceCounter();
 
-		assert(_valid);
-		u32* pixel = _data;
+		u32* pixel = data;
 
-		f32 ar = (f32)_width / _height;
-		v3 lower_left(-ar,1.0f,-1.0f);
-		v3 horz(2.0f*ar,0.0f,0.0f);
-		v3 vert(0.0f,-2.0f,0.0f);
-		v3 origin;
+		for(u32 y = 0; y < height; y++) {
+			f32 v = (f32)y / height;
 
-		object_list list;
-		list.objects.push_back(object::sphere({0.0f,0.0f,-1.0f},0.5f));
-		list.objects.push_back(object::sphere({0.0f,-100.5f,-1.0f},100.0f));
+			for(u32 x = 0; x < width; x++) {
+				f32 u = (f32)x / width;
 
-		for(u32 y = 0; y < _height; y++) {
-			f32 v = (f32)y / _height;
-
-			for(u32 x = 0; x < _width; x++) {
-				f32 u = (f32)x / _width;
-
-				ray r{origin, lower_left + u*horz + v*vert};
-				v3 col = compute(r, list);
+				v3 col = s.compute_pixel(u,v);
 
 				(*pixel++) = (0xff << 24) | 
 							 ((u32)(255.0f * col.z) << 16) |
@@ -166,55 +190,34 @@ struct image {
 			}
 		}
 
+		commit();
 		u64 end = SDL_GetPerformanceCounter();
 		return end - start;
 	}
 
-
-
-	image() {}
-	static image make(u32 w, u32 h) {
-		return image(w,h);
+	void init(u32 w, u32 h) {
+		width = w;
+		height = h;
+		data = new u32[width*height]();
+		glGenTextures(1, &handle);
+		commit();
 	}
-	~image() {
-		delete[] _data;
-		_data = null;
-		if(_handle) glDeleteTextures(1, &_handle);
-		_width = _height = _handle = 0;
-		_valid = _committed = false;
+	void destroy() {
+		delete[] data;
+		data = null;
+		if(handle) glDeleteTextures(1, &handle);
+		width = height = handle = 0;
 	}
-	void operator=(image&& other) {
-		this->~image();
-		_valid = other._valid;
-		_width = other._width;
-		_height = other._height;
-		_data = other._data;
-		_handle = other._handle;
-		other._width = other._height = other._handle = 0;
-		other._valid = other._committed = false;
-		other._data = null;
-	}
+	~image() { destroy();}
 
 	void commit() {
-		assert(_valid);
-		glBindTexture(GL_TEXTURE_2D, _handle);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0, GL_RGBA, GL_UNSIGNED_BYTE, _data);
+		glBindTexture(GL_TEXTURE_2D, handle);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		_committed = true;
-	}
-	GLuint handle() {
-		assert(_valid && _committed);
-		return _handle;
 	}
 
-private:
-	bool _valid = false, _committed = false;
-	u32 _width = 0, _height = 0;
-	u32* _data = nullptr;
-	GLuint _handle = 0;
-
-	image(u32 w, u32 h) : _width(w), _height(h), _data(new u32[_width*_height]()), _valid(true) {
-		glGenTextures(1, &_handle);
-	}
+	u32 width = 0, height = 0;
+	u32* data = nullptr;
+	GLuint handle = 0;
 };

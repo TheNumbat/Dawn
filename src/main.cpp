@@ -77,8 +77,12 @@ int main(int, char**) {
 
 	iv2 size = {640,480};
 	u64 time = 0;
-	image result = image::make(size.x, size.y);
-	result.commit();
+	
+	scene s;
+	image result;
+
+	s.init(size.x, size.y);
+	result.init(size.x, size.y);
 
 	bool running = true;
 	while(running) {
@@ -113,14 +117,14 @@ int main(int, char**) {
 	    ImGui::InputInt2("Size",size.a);
 
 	    if(ImGui::Button("Generate")) {
-	    	result = image::make(size.x, size.y);
-	    	time = result.render();
-	    	result.commit();
+	    	result.destroy();
+	    	result.init(size.x, size.y);
+	    	time = result.render(s);
 	    }
 	    ImGui::SameLine();
 	    ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
 
-	    ImGui::Image((ImTextureID)(iptr)result.handle(), {(f32)size.x,(f32)size.y});
+	    ImGui::Image((ImTextureID)(iptr)result.handle, {(f32)size.x,(f32)size.y});
 
 	    ImGui::End();
 
