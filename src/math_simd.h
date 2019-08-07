@@ -58,18 +58,18 @@ union v3_lane {
 	f32_lane v[3];
 	__m256 a[3] = {};
 
-	void operator+=(v3_lane v) {x = _mm256_add_ps(x, v.x);
-						   		y = _mm256_add_ps(y, v.y);
-						   		z = _mm256_add_ps(z, v.z);}
-	void operator-=(v3_lane v) {x = _mm256_sub_ps(x, v.x);
-						   		y = _mm256_sub_ps(y, v.y);
-						   		z = _mm256_sub_ps(z, v.z);}
-	void operator*=(v3_lane v) {x = _mm256_mul_ps(x, v.x);
-						   		y = _mm256_mul_ps(y, v.y);
-						   		z = _mm256_mul_ps(z, v.z);}
-	void operator/=(v3_lane v) {x = _mm256_div_ps(x, v.x);
-						   		y = _mm256_div_ps(y, v.y);
-						   		z = _mm256_div_ps(z, v.z);}
+	void operator+=(v3_lane o) {x = _mm256_add_ps(x, o.x);
+						   		y = _mm256_add_ps(y, o.y);
+						   		z = _mm256_add_ps(z, o.z);}
+	void operator-=(v3_lane o) {x = _mm256_sub_ps(x, o.x);
+						   		y = _mm256_sub_ps(y, o.y);
+						   		z = _mm256_sub_ps(z, o.z);}
+	void operator*=(v3_lane o) {x = _mm256_mul_ps(x, o.x);
+						   		y = _mm256_mul_ps(y, o.y);
+						   		z = _mm256_mul_ps(z, o.z);}
+	void operator/=(v3_lane o) {x = _mm256_div_ps(x, o.x);
+						   		y = _mm256_div_ps(y, o.y);
+						   		z = _mm256_div_ps(z, o.z);}
 	void operator*=(f32_lane s) {
 							x = _mm256_mul_ps(x, s.v);
 						    y = _mm256_mul_ps(y, s.v);
