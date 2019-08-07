@@ -1,7 +1,5 @@
 TODO:
 
-SIMD optimizations ?
-	pass by reference all SIMD types
-
+SIMD optimizations
 raytracing the next week
 start PBRT book
