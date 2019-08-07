@@ -44,14 +44,14 @@ struct camera {
 		vert_step = -2.0f*half_h*focus*up;
 	}
 
-	ray get_ray(f32 u, f32 v, f32 jitx, f32 jity) {
+	ray_lane get_rays(f32_lane u, f32_lane v, f32_lane jitx, f32_lane jity) {
 		
 		jitx /= (f32)wid;
 		jity /= (f32)hei;
-		u += jitx; v += jity;
+		// u += jitx; v += jity;
 
-		v3 lens_pos = aperture * random_ledisk();
-		v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
+		v3_lane lens_pos = aperture * random_ledisk_lane();
+		v3_lane offset = pos + right * lens_pos.x + up * lens_pos.y;
 		return {offset, lower_left + u*horz_step + v*vert_step - offset};
 	}
 };
@@ -108,30 +108,39 @@ struct scene {
 	}
 	~scene() {destroy();}
 
-	v3 compute(ray r, i32 depth = 0) {
-		trace t = list.hit(r, 0.001f, FLT_MAX);
-		if(t.hit) {
-			if(depth >= max_depth) return v3();
+	v3_lane compute(ray_lane r, i32 depth = 0) {
 
-			scatter s = mats.get(t.mat)->bsdf(r, t);
+		if(depth >= max_depth) return f32_lane{};
 
-			if(s.absorbed) return v3();
+		trace_lane t = list.hit(r, 0.001f, FLT_MAX);
+		scatter_lane s = mats.get(t.mat)->bsdf(r, t);
 
-			return s.attenuation * compute(s.out, depth+1);
-		}
+		f32_lane hit_mask = t.hit;
+		f32_lane absorb_mask = ~s.absorbed;
 
-		v3 unit = norm(r.dir);
-		f32 fade = 0.5f * (unit.y + 1.0f);
-		return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+		v3_lane colors = s.attenuation * compute(s.out, depth+1);
+
+		v3_lane unit = norm(r.dir);
+		f32_lane fade = 0.5f * (unit.y + 1.0f);
+		v3_lane sky = lerp(v3_lane(0.5f,0.7f,1.0f), v3_lane(1.0f), fade);
+
+		v3_lane result;
+		result |= (colors & hit_mask & absorb_mask);
+		result |= (sky & (~hit_mask) & absorb_mask);
+		return result;
 	}
-	v3 pixel(f32 u, f32 v) {
-		v3 result;
+	v3 pixel(f32_lane u, f32_lane v) {
+		v3_lane result_lane;
 		for(i32 s = 0; s < samples; s++) {
-			f32 jitx = randf_cpp(), jity = randf_cpp();
-			ray r = cam.get_ray(u,v, jitx,jity);
-			result += compute(r);
+			f32_lane jitx = randf_lane(), jity = randf_lane();
+			ray_lane r = cam.get_rays(u,v, jitx,jity);
+			result_lane += compute(r);
 		}
-		result /= (f32)samples;
-		return pow(result, 1.0f / 2.2f);
+		
+		result_lane = pow(result_lane, 1.0f / 2.2f);
+		result_lane /= (f32)samples;
+
+		v3 result(sum(result_lane.x),sum(result_lane.y),sum(result_lane.z));
+		return result / (f32)LANE_WIDTH;
 	}
 };

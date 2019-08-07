@@ -72,7 +72,13 @@ struct image {
 								 width, height};
 
 				total_tasks++;
+
+#if 0
 				pool.enqueue([t,this] {render_thread(t); tasks_complete++;});
+#else
+				render_thread(t);
+				tasks_complete++;
+#endif
 			}
 		}
 

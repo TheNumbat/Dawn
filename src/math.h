@@ -6,8 +6,6 @@
 #include <math.h>
 #include <random>
 
-#include "math_simd.h"
-
 #ifdef _MSC_VER
 #pragma warning(disable : 4201)
 #endif
@@ -151,3 +149,5 @@ struct ray {
 	v3 pos, dir;
 	v3 get(f32 t) {return pos + t * dir;}
 };
+
+#include "math_simd.h"

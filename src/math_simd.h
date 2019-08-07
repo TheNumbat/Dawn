@@ -27,8 +27,14 @@ union f32_lane {
 	void operator/=(f32 _s) {__m256 s = _mm256_set1_ps(_s);
 							 v = _mm256_div_ps(v, s);}
 
+	void operator|=(f32_lane x) {v = _mm256_or_ps(v,x.v);}
+	void operator&=(f32_lane x) {v = _mm256_and_ps(v,x.v);}
+	f32_lane operator~() {return {_mm256_xor_ps(v,_mm256_castsi256_ps(_mm256_set1_epi32(0xffffffff)))};}
+
 	f32_lane operator-() {__m256 _z = _mm256_setzero_ps();
 						  return {_mm256_sub_ps(_z,v)};}
+
+	void set_all_int(i32 i) {v = _mm256_castsi256_ps(_mm256_set1_epi32(i));}
 
 	f32_lane() {}
 	f32_lane(f32 _v) {v = _mm256_set1_ps(_v);}
@@ -80,6 +86,20 @@ union v3_lane {
 							x = _mm256_div_ps(x, _s);
 						    y = _mm256_div_ps(y, _s);
 						    z = _mm256_div_ps(z, _s);}
+
+	void operator|=(f32_lane o) {x = _mm256_or_ps(x,o.v);
+								 y = _mm256_or_ps(y,o.v);
+								 z = _mm256_or_ps(z,o.v);}
+	void operator&=(f32_lane o) {x = _mm256_and_ps(x,o.v);
+								 y = _mm256_and_ps(y,o.v);
+								 z = _mm256_and_ps(z,o.v);}
+	void operator|=(v3_lane o) {x = _mm256_or_ps(x,o.x);
+								y = _mm256_or_ps(y,o.y);
+								z = _mm256_or_ps(z,o.z);}
+	void operator&=(v3_lane o) {x = _mm256_and_ps(x,o.x);
+								y = _mm256_and_ps(y,o.y);
+								z = _mm256_and_ps(z,o.z);}
+
 	v3_lane operator-() {__m256 _z = _mm256_setzero_ps();
 					return {_mm256_sub_ps(_z,x),
 							_mm256_sub_ps(_z,y),
@@ -184,17 +204,17 @@ v3_lane operator/(f32 _l, v3_lane r) {
 	 _mm256_div_ps(l, r.z)};
 }
 
-i32 operator==(v3_lane l, v3_lane r) {
-	i32 cmpx = _mm256_movemask_ps(_mm256_cmp_ps(l.x,r.x,_CMP_EQ_OQ));
-	i32 cmpy = _mm256_movemask_ps(_mm256_cmp_ps(l.y,r.y,_CMP_EQ_OQ));
-	i32 cmpz = _mm256_movemask_ps(_mm256_cmp_ps(l.z,r.z,_CMP_EQ_OQ));
-	return cmpx & cmpy & cmpz;
+f32_lane operator==(v3_lane l, v3_lane r) {
+	__m256 cmpx = _mm256_cmp_ps(l.x,r.x,_CMP_EQ_OQ);
+	__m256 cmpy = _mm256_cmp_ps(l.y,r.y,_CMP_EQ_OQ);
+	__m256 cmpz = _mm256_cmp_ps(l.z,r.z,_CMP_EQ_OQ);
+	return _mm256_and_ps(_mm256_and_ps(cmpx,cmpy),cmpz);
 }
-i32 operator!=(v3_lane l, v3_lane r) {
-	i32 cmpx = _mm256_movemask_ps(_mm256_cmp_ps(l.x,r.x,_CMP_NEQ_OQ));
-	i32 cmpy = _mm256_movemask_ps(_mm256_cmp_ps(l.y,r.y,_CMP_NEQ_OQ));
-	i32 cmpz = _mm256_movemask_ps(_mm256_cmp_ps(l.z,r.z,_CMP_NEQ_OQ));
-	return cmpx | cmpy | cmpz;
+f32_lane operator!=(v3_lane l, v3_lane r) {
+	__m256 cmpx = _mm256_cmp_ps(l.x,r.x,_CMP_NEQ_OQ);
+	__m256 cmpy = _mm256_cmp_ps(l.y,r.y,_CMP_NEQ_OQ);
+	__m256 cmpz = _mm256_cmp_ps(l.z,r.z,_CMP_NEQ_OQ);
+	return _mm256_or_ps(_mm256_or_ps(cmpx,cmpy),cmpz);
 }
 
 v3_lane pow(v3_lane v, f32 _r) {
@@ -202,6 +222,34 @@ v3_lane pow(v3_lane v, f32 _r) {
 	return {_mm256_pow_ps(v.x,r),
 			_mm256_pow_ps(v.y,r),
 			_mm256_pow_ps(v.z,r)};
+}
+
+f32_lane operator&(f32_lane l, f32_lane r) {
+	return {_mm256_and_ps(l.v, r.v)};
+}
+f32_lane operator|(f32_lane l, f32_lane r) {
+	return {_mm256_or_ps(l.v, r.v)};
+}
+
+v3_lane operator&(v3_lane l, f32_lane r) {
+	return {_mm256_and_ps(l.x, r.v),
+			_mm256_and_ps(l.y, r.v),
+			_mm256_and_ps(l.z, r.v)};
+}
+v3_lane operator|(v3_lane l, f32_lane r) {
+	return {_mm256_or_ps(l.x, r.v),
+			_mm256_or_ps(l.y, r.v),
+			_mm256_or_ps(l.z, r.v)};
+}
+v3_lane operator&(f32_lane l, v3_lane r) {
+	return {_mm256_and_ps(l.v, r.x),
+			_mm256_and_ps(l.v, r.y),
+			_mm256_and_ps(l.v, r.z)};
+}
+v3_lane operator|(f32_lane l, v3_lane r) {
+	return {_mm256_or_ps(l.v, r.x),
+			_mm256_or_ps(l.v, r.y),
+			_mm256_or_ps(l.v, r.z)};
 }
 
 f32_lane operator+(f32_lane l, f32_lane r) {
@@ -249,32 +297,74 @@ f32_lane operator/(f32 _l, f32_lane r) {
 	return {_mm256_div_ps(l, r.v)};
 }
 
-i32 operator==(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_EQ_OQ));
+f32_lane operator==(f32_lane l, f32_lane r) {
+	return _mm256_cmp_ps(l.v,r.v,_CMP_EQ_OQ);
 }
-i32 operator!=(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_NEQ_OQ));
+f32_lane operator!=(f32_lane l, f32_lane r) {
+	return _mm256_cmp_ps(l.v,r.v,_CMP_NEQ_OQ);
 }
-
-i32 operator>(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_GT_OS));
+f32_lane operator>(f32_lane l, f32_lane r) {
+	return _mm256_cmp_ps(l.v,r.v,_CMP_GT_OS);
 }
-i32 operator<(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_LT_OS));
+f32_lane operator<(f32_lane l, f32_lane r) {
+	return _mm256_cmp_ps(l.v,r.v,_CMP_LT_OS);
 }
-i32 operator>=(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_GE_OS));
+f32_lane operator>=(f32_lane l, f32_lane r) {
+	return _mm256_cmp_ps(l.v,r.v,_CMP_GE_OS);
 }
-i32 operator<=(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_LE_OS));
+f32_lane operator<=(f32_lane l, f32_lane r) {
+	return _mm256_cmp_ps(l.v,r.v,_CMP_LE_OS);
+}
+f32_lane operator==(f32_lane l, f32 r) {
+	return _mm256_cmp_ps(l.v,_mm256_set1_ps(r),_CMP_EQ_OQ);
+}
+f32_lane operator!=(f32_lane l, f32 r) {
+	return _mm256_cmp_ps(l.v,_mm256_set1_ps(r),_CMP_NEQ_OQ);
+}
+f32_lane operator>(f32_lane l, f32 r) {
+	return _mm256_cmp_ps(l.v,_mm256_set1_ps(r),_CMP_GT_OS);
+}
+f32_lane operator<(f32_lane l, f32 r) {
+	return _mm256_cmp_ps(l.v,_mm256_set1_ps(r),_CMP_LT_OS);
+}
+f32_lane operator>=(f32_lane l, f32 r) {
+	return _mm256_cmp_ps(l.v,_mm256_set1_ps(r),_CMP_GE_OS);
+}
+f32_lane operator<=(f32_lane l, f32 r) {
+	return _mm256_cmp_ps(l.v,_mm256_set1_ps(r),_CMP_LE_OS);
+}
+f32_lane operator==(f32 l, f32_lane r) {
+	return _mm256_cmp_ps(_mm256_set1_ps(l),r.v,_CMP_EQ_OQ);
+}
+f32_lane operator!=(f32 l, f32_lane r) {
+	return _mm256_cmp_ps(_mm256_set1_ps(l),r.v,_CMP_NEQ_OQ);
+}
+f32_lane operator>(f32 l, f32_lane r) {
+	return _mm256_cmp_ps(_mm256_set1_ps(l),r.v,_CMP_GT_OS);
+}
+f32_lane operator<(f32 l, f32_lane r) {
+	return _mm256_cmp_ps(_mm256_set1_ps(l),r.v,_CMP_LT_OS);
+}
+f32_lane operator>=(f32 l, f32_lane r) {
+	return _mm256_cmp_ps(_mm256_set1_ps(l),r.v,_CMP_GE_OS);
+}
+f32_lane operator<=(f32 l, f32_lane r) {
+	return _mm256_cmp_ps(_mm256_set1_ps(l),r.v,_CMP_LE_OS);
 }
 
 f32_lane pow(f32_lane l, f32 _r) {
 	__m256 r = _mm256_set1_ps(_r);
 	return {_mm256_pow_ps(l.v,r)};
 }
+
 f32_lane sqrt(f32_lane l) {
 	return {_mm256_sqrt_ps(l.v)};
+}
+f32 sum(f32_lane l) {
+	__m256 a = _mm256_hadd_ps(l.v,l.v);
+	__m256 b = _mm256_hadd_ps(a,a);
+	__m256 c = _mm256_hadd_ps(b,b);
+	return f32_lane{c}.f[0];
 }
 
 std::ostream& operator<<(std::ostream& out, v3_lane r) {
@@ -294,6 +384,10 @@ std::ostream& operator<<(std::ostream& out, f32_lane r) {
 	}
 	out << "}";
 	return out;
+}
+
+v3_lane operator*(v3 l, f32_lane r) {
+	return v3_lane{l.x * r, l.y * r, l.z * r};
 }
 
 f32_lane dot(v3_lane l, v3_lane r) {
@@ -332,6 +426,35 @@ struct ray_lane {
 	v3_lane pos, dir;
 	v3_lane get(f32_lane t) {return pos + t * dir;}
 };
+
+f32_lane randf_lane() {
+	f32_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		f32 r = randf_cpp();
+		ret.f[i] = r;
+	}
+	return ret;
+}
+v3_lane random_leunit_lane() {
+	v3_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		v3 r = random_leunit();
+		ret.xf[i] = r.x;
+		ret.yf[i] = r.y;
+		ret.zf[i] = r.z;
+	}
+	return ret;
+}
+v3_lane random_ledisk_lane() {
+	v3_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		v3 r = random_ledisk();
+		ret.xf[i] = r.x;
+		ret.yf[i] = r.y;
+		ret.zf[i] = r.z;
+	}
+	return ret;	
+}
 
 void test_simd() {
 
