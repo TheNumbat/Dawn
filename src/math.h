@@ -2,8 +2,11 @@
 #pragma once
 
 #include "basic.h"
+
 #include <math.h>
 #include <random>
+
+#include "math_simd.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4201)
@@ -116,6 +119,11 @@ v3 cross(v3 l, v3 r) {
 }
 v3 lerp(v3 min, v3 max, f32 dist) {
 	return (max - min) * dist + min;
+}
+
+std::ostream& operator<<(std::ostream& out, v3 r) {
+	out << "{" << r.x << "," << r.y << "," << r.z << "}";
+	return out;
 }
 
 void seed_rand() {
