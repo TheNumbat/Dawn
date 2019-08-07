@@ -2,11 +2,11 @@
 #pragma once
 
 #include <SDL2/SDL.h>
-#include <threadpool.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image_write.h>
 
+#include "threadpool.h"
 #include "scene.h"
 
 struct thread_data {
