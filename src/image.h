@@ -44,11 +44,10 @@ struct image {
 	GLuint handle = 0;
 
 	static const i32 Block_Size = 64;
-	std::atomic<i32> tasks_complete;
+	std::atomic<i32> tasks_complete = -1;
 	i32 total_tasks = 0;
 	ThreadPool pool;
 
-	image() : tasks_complete(-1), pool(SDL_GetCPUCount()) {}
 	u64 begin_render(scene& s) {
 
 		u64 start = SDL_GetPerformanceCounter();
@@ -105,14 +104,16 @@ struct image {
 		data = new u32[width*height]();
 		glGenTextures(1, &handle);
 		commit();
+		pool.start(SDL_GetCPUCount());
 	}
 	void destroy() {
+		pool.finish();
 		delete[] data;
 		data = null;
 		if(handle) glDeleteTextures(1, &handle);
 		width = height = handle = 0;
 	}
-	~image() { destroy();}
+	~image() { pool.kill(); destroy();}
 
 	void write_to_file(std::string file) {
 		stbi_write_png(file.c_str(), width, height, 4, data, width * sizeof(u32));
