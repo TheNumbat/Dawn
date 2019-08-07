@@ -15,6 +15,7 @@
 
 union f32_lane {
 	__m256 v;
+	i32 i[LANE_WIDTH];
 	f32 f[LANE_WIDTH] = {};
 
 	void operator+=(f32_lane x) {v = _mm256_add_ps(v, x.v);}
@@ -34,10 +35,11 @@ union f32_lane {
 	f32_lane operator-() {__m256 _z = _mm256_setzero_ps();
 						  return {_mm256_sub_ps(_z,v)};}
 
-	void set_all_int(i32 i) {v = _mm256_castsi256_ps(_mm256_set1_epi32(i));}
+	void set_all_int(i32 _i) {v = _mm256_castsi256_ps(_mm256_set1_epi32(_i));}
 
 	f32_lane() {}
 	f32_lane(f32 _v) {v = _mm256_set1_ps(_v);}
+	f32_lane(i32 _v) {v = _mm256_castsi256_ps(_mm256_set1_epi32(_v));}
 	f32_lane(__m256 _v) {v = _v;}
 
 	f32_lane(const f32_lane& o) {memcpy(this,&o,sizeof(f32_lane));}

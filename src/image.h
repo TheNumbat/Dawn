@@ -43,7 +43,7 @@ struct image {
 	u32* data = nullptr;
 	GLuint handle = 0;
 
-	static const i32 Block_Size = 64;
+	static const i32 Block_Size = 32;
 	std::atomic<i32> tasks_complete = -1;
 	i32 total_tasks = 0;
 	ThreadPool pool;

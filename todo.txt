@@ -1,8 +1,7 @@
 TODO:
 
-SIMD fixes
-SIMD optimizations - stuff like no hits -> don't compute 
-pass by reference all SIMD types
+SIMD optimizations ?
+	pass by reference all SIMD types
 
 raytracing the next week
 start PBRT book

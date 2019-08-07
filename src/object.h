@@ -8,7 +8,7 @@
 struct trace_lane {
 	f32_lane t, hit;
 	v3_lane pos, normal;
-	i32 mat = 0;
+	f32_lane mat;
 
 	void take_on(trace_lane o) {
 		hit |= o.hit;
@@ -16,12 +16,12 @@ struct trace_lane {
 		t   &= ~o.hit;
 		pos &= ~o.hit;
 		normal &= ~o.hit;
+		mat &= ~o.hit;
 
 		t |= o.t & o.hit;
 		pos |= o.pos & o.hit;
 		normal |= o.normal & o.hit;
-
-		mat = o.mat;
+		mat |= o.mat & o.hit;
 	}
 };
 
@@ -94,7 +94,7 @@ struct object {
 		case obj::sphere: ret = s.hit(r,tmin,tmax); break;
 		default: assert(false);
 		}
-		ret.mat = mat;
+		ret.mat |= ret.hit & f32_lane(mat);
 		return ret;
 	}
 	
