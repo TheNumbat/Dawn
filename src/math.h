@@ -31,7 +31,7 @@ union v3 {
 	void operator*=(f32 s) {x *= s; y *= s; z *= s;}
 	void operator/=(f32 s) {x /= s; y /= s; z /= s;}
 	f32& operator[](i32 idx) {return a[idx];}
-	v3 operator-() {return {-x,-y,-z};}
+	v3 operator-() const {return {-x,-y,-z};}
 
 	v3() {}
 	v3(f32 _x) {x = _x; y = _x; z = _x;}
@@ -146,7 +146,7 @@ const v3 random_ledisk() {
 
 struct ray {
 	v3 pos, dir;
-	v3 get(f32 t) {return pos + t * dir;}
+	v3 get(f32 t) const {return pos + t * dir;}
 };
 
 #include "math_simd.h"

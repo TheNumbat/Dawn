@@ -8,13 +8,9 @@
 struct camera {
 
 	// params
-	f32 ar, fov, aperture;
-	i32 wid,hei;
+	f32 ar = 0.0f, fov = 0.0f, aperture = 0.0f;
+	i32 wid = 0, hei = 0;
 	v3 pos, look;
-
-	// calculated
-	v3 forward, right, up;
-	v3 lower_left, horz_step, vert_step;
 
 	void init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap) {
 		wid = w;
@@ -44,16 +40,20 @@ struct camera {
 		vert_step = -2.0f*half_h*focus*up;
 	}
 
-	ray_lane get_rays(f32 u, f32 v, const f32_lane& _jitx, const f32_lane& _jity) const {
+	ray get_ray(f32 u, f32 v, f32 jitx, f32 jity) const {
 		
-		f32_lane jitx = _jitx / (f32)wid;
-		f32_lane jity = _jity / (f32)hei;
-		jitx += u; jity += v;
+		jitx /= (f32)wid;
+		jity /= (f32)hei;
+		u += jitx; v += jity;
 
-		v3_lane lens_pos = aperture * random_ledisk_lane();
-		v3_lane offset = pos + right * lens_pos.x + up * lens_pos.y;
-		return {offset, lower_left + jitx*horz_step + jity*vert_step - offset};
+		v3 lens_pos = aperture * random_ledisk();
+		v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
+		return {offset, lower_left + u*horz_step + v*vert_step - offset};
 	}
+
+private:
+	v3 forward, right, up;
+	v3 lower_left, horz_step, vert_step;
 };
 
 struct scene {
@@ -108,68 +108,31 @@ struct scene {
 	}
 	~scene() {destroy();}
 
-	static i32 find_uniques(i32 out[LANE_WIDTH], i32 in[LANE_WIDTH]) {
-		i32 found = 0;
-		for(i32 i = 0; i < LANE_WIDTH; i++) {
-			i32 mat = in[i];
-			if(mat != 0) {
-				for(i32 j = 0; j < found; j++) {
-					if(out[j] == mat) goto repeat;
-				}
-				out[found] = mat;
-				found++;
-			}
-			repeat: continue;
-		}
-		return found;
-	}
+	v3 compute(const ray& r, i32 depth = 0) const {
+		
+		trace t = list.hit(r, 0.001f, FLT_MAX);
+		if(t.hit) {
+			if(depth >= max_depth) return v3();
 
-	v3_lane compute(const ray_lane& r, i32 depth = 0) const {
+			scatter s = mats.get(t.mat)->bsdf(r, t);
 
-		trace_lane t = list.hit(r, f32_lane{0.001f}, f32_lane{FLT_MAX});
+			if(s.absorbed) return v3();
 
-		i32 unique[LANE_WIDTH] = {};
-		i32 found = find_uniques(unique, t.mat.i);
-
-		v3_lane result;
-		f32_lane hit_mask = t.hit;
-		f32_lane absorb_mask{-1};
-
-		if(found && depth >= max_depth) {
-			return f32_lane{};
+			return s.attenuation * compute(s.out, depth+1);
 		}
 
-		for(i32 i = 0; i < found; i++) {
-			
-			scatter_lane s = mats.get(unique[i])->bsdf(r, t);
-			
-			f32_lane mat_mask = t.mat == f32_lane{unique[i]};
-			v3_lane colors = s.attenuation * compute(s.out, depth+1);
-			f32_lane local_absorb = mat_mask & ~(hit_mask & s.absorbed);
-
-			result |= (colors & hit_mask & local_absorb);
-			absorb_mask |= local_absorb;
-		}
-
-		v3_lane unit = norm(r.dir);
-		f32_lane fade = 0.5f * (unit.y + 1.0f);
-		v3_lane sky = lerp(v3_lane(0.5f,0.7f,1.0f), v3_lane(1.0f), fade);
-		result |= (sky & (~hit_mask) & absorb_mask);
-
-		return result;
+		v3 unit = norm(r.dir);
+		f32 fade = 0.5f * (unit.y + 1.0f);
+		return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
 	}
 	v3 pixel(f32 u, f32 v) const {
-		v3_lane result_lane;
+		v3 result;
 		for(i32 s = 0; s < samples; s++) {
-			f32_lane jitx = randf_lane(), jity = randf_lane();
-			ray_lane r = cam.get_rays(u,v, jitx,jity);
-			result_lane += compute(r);
+			f32 jitx = randf_cpp(), jity = randf_cpp();
+			ray r = cam.get_ray(u,v, jitx,jity);
+			result += compute(r);
 		}
-		
-		v3 result(sum(result_lane.x),sum(result_lane.y),sum(result_lane.z));
-
-		result = result / ((f32)LANE_WIDTH * samples);
-		result = pow(result, 1.0f / 2.2f);
-		return result;
+		result /= (f32)samples;
+		return pow(result, 1.0f / 2.2f);
 	}
 };

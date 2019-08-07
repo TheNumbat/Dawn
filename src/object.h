@@ -5,24 +5,11 @@
 
 #include <vector>
 
-struct trace_lane {
-	f32_lane t, hit;
-	v3_lane pos, normal;
-	f32_lane mat;
-
-	void take_on(trace_lane& o) {
-		hit |= o.hit;
-		
-		t   &= ~o.hit;
-		pos &= ~o.hit;
-		normal &= ~o.hit;
-		mat &= ~o.hit;
-
-		t |= o.t & o.hit;
-		pos |= o.pos & o.hit;
-		normal |= o.normal & o.hit;
-		mat |= o.mat & o.hit;
-	}
+struct trace {
+	bool hit = false;
+	f32 t = 0.0f;
+	i32 mat = 0;
+	v3 pos, normal;
 };
 
 struct sphere {
@@ -30,42 +17,35 @@ struct sphere {
 	v3 pos;
 	f32 rad = 0.0f;
 
-	trace_lane hit(const ray_lane& r, const f32_lane& tmin, const f32_lane& tmax) const {
+	trace hit(const ray& r, f32 tmin, f32 tmax) const {
 		
-		trace_lane ret;
-		v3_lane rel_pos = r.pos - pos;
+		trace ret;
+		v3 rel_pos = r.pos - pos;
+		f32 a = lensq(r.dir);
+		f32 b = 2.0f * dot(rel_pos, r.dir);
+		f32 c = lensq(rel_pos) - rad*rad;
+		f32 d = b*b - 4*a*c;
 
-		f32_lane a = lensq(r.dir);
-		f32_lane b = f32_lane{2.0f} * dot(rel_pos, r.dir);
-		f32_lane c = lensq(rel_pos) - rad*rad;
-		f32_lane d = b*b - 4*a*c;
-		
-		f32_lane pos_mask = d > 0.0f;
-		f32_lane neg_mask = ~pos_mask;
+		if(d <= 0.0f) return ret;
 
-		f32_lane sqd = sqrt(d);
-		f32_lane a2 = 2.0f * a;
+		f32 sqd = sqrtf(d);
+
+		f32 result = (-b - sqd) / (2.0f * a);
+		if(result <= tmax && result >= tmin) {
+			ret.hit = true;
+			ret.t = result;
+			ret.pos = r.get(result);
+			ret.normal = (ret.pos - pos) / rad;
+			return ret;
+		} 
 		
-		f32_lane result, mask;
-		{ // d > 0.0f
-			f32_lane temp = ((-b - sqd) / a2);
-			f32_lane t_mask = pos_mask & (temp <= tmax) & (temp >= tmin);
-			result |= t_mask & temp;
-			mask   |= t_mask;
+		result = (-b + sqd) / (2.0f * a);
+		if(result <= tmax && result >= tmin) {
+			ret.hit = true;
+			ret.t = result;
+			ret.pos = r.get(result);
+			ret.normal = (ret.pos - pos) / rad;
 		}
-		{
-			f32_lane temp = ((-b + sqd) / a2);
-			f32_lane t_mask = neg_mask & (temp <= tmax) & (temp >= tmin);	
-			
-			result |= t_mask & temp;
-			mask   |= t_mask;
-		}
-
-		ret.hit    = mask;
-		ret.t 	   = result;
-		ret.pos    = r.get(result);
-		ret.normal = (ret.pos - pos) / rad;
-
 		return ret;
 	}
 };
@@ -88,13 +68,13 @@ struct object {
 		ret.s = {pos,rad};
 		return ret;
 	}
-	trace_lane hit(const ray_lane& r, const f32_lane& tmin, const f32_lane& tmax) const {
-		trace_lane ret;
+	trace hit(const ray& r, f32 tmin, f32 tmax) const {
+		trace ret;
 		switch(type) {
 		case obj::sphere: ret = s.hit(r,tmin,tmax); break;
 		default: assert(false);
 		}
-		ret.mat |= ret.hit & f32_lane(mat);
+		ret.mat = mat;
 		return ret;
 	}
 	
@@ -109,18 +89,16 @@ struct object_list {
 
 	void destroy() {objects.clear();}
 	~object_list() {destroy();}
-	trace_lane hit(const ray_lane& r, const f32_lane& tmin, const f32_lane& tmax) const {
+	trace hit(const ray& r, f32 tmin, f32 tmax) const {
 		
-		trace_lane ret;
-		f32_lane closest = tmax;
-
+		trace ret;
+		f32 closest = tmax;		
 		for(const object& o : objects) {
-
-			trace_lane next = o.hit(r,tmin,closest);
-			
-			ret.take_on(next);
-			closest &= ~next.hit;
-			closest |= next.t & next.hit;
+			trace next = o.hit(r,tmin,closest);
+			if(next.hit) {
+				ret = next;
+				closest = next.t;
+			}
 		}
 		return ret;
 	}

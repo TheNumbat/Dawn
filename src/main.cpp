@@ -85,7 +85,7 @@ int main(int, char**) {
 	scene s;
 	image result;
 
-	s.init(size[0],size[1],size[2]/LANE_WIDTH);
+	s.init(size[0],size[1],size[2]);
 	result.init(size[0], size[1]);
 
 	bool running = true;
@@ -129,7 +129,7 @@ int main(int, char**) {
 	    	s.destroy();
 	    	result.destroy();
 
-	    	s.init(size[0],size[1],size[2]/LANE_WIDTH);
+	    	s.init(size[0],size[1],size[2]);
 			result.init(size[0], size[1]);
 
 	    	start = result.begin_render(s);
