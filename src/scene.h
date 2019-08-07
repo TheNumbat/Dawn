@@ -60,7 +60,7 @@ struct scene {
 
 	object_list list;
 	camera cam;
-	i32 samples = 1, max_depth = 5;
+	i32 samples = 1, max_depth = 1;
 
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;
@@ -108,31 +108,36 @@ struct scene {
 	}
 	~scene() {destroy();}
 
-	v3_lane compute(const ray_lane& r, i32 depth = 0) const {
-
-		if(depth >= max_depth) {
-			return f32_lane{};
-		}
-
-		trace_lane t = list.hit(r, f32_lane{0.001f}, f32_lane{FLT_MAX});
-
+	static i32 find_uniques(i32 out[LANE_WIDTH], i32 in[LANE_WIDTH]) {
 		i32 found = 0;
-		i32 unique[LANE_WIDTH] = {};
 		for(i32 i = 0; i < LANE_WIDTH; i++) {
-			i32 mat = t.mat.i[i];
+			i32 mat = in[i];
 			if(mat != 0) {
 				for(i32 j = 0; j < found; j++) {
-					if(unique[j] == mat) goto repeat;
+					if(out[j] == mat) goto repeat;
 				}
-				unique[found] = mat;
+				out[found] = mat;
 				found++;
 			}
 			repeat: continue;
 		}
+		return found;
+	}
+
+	v3_lane compute(const ray_lane& r, i32 depth = 0) const {
+
+		trace_lane t = list.hit(r, f32_lane{0.001f}, f32_lane{FLT_MAX});
+
+		i32 unique[LANE_WIDTH] = {};
+		i32 found = find_uniques(unique, t.mat.i);
 
 		v3_lane result;
 		f32_lane hit_mask = t.hit;
 		f32_lane absorb_mask{-1};
+
+		if(found && depth >= max_depth) {
+			return f32_lane{};
+		}
 
 		for(i32 i = 0; i < found; i++) {
 			
