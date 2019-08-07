@@ -1,7 +1,43 @@
 
 #pragma once
 
-#define LANE_WIDTH 8
+#if LANE_WIDTH==8
+#define __lane __m256
+#define __add_ps _mm256_add_ps
+#define __sub_ps _mm256_sub_ps
+#define __mul_ps _mm256_mul_ps
+#define __div_ps _mm256_div_ps
+#define __or_ps _mm256_or_ps
+#define __and_ps _mm256_and_ps
+#define __set1_ps _mm256_set1_ps
+#define __sqrt_ps _mm256_sqrt_ps
+#define __setzero_ps _mm256_setzero_ps
+#define __casti_ps _mm256_castsi256_ps
+#define __cmp_ps _mm256_cmp_ps
+#define __set1_epi32 _mm256_set1_epi32
+#define __xor_ps _mm256_xor_ps
+#define __pow_ps _mm256_pow_ps
+#define __hadd_ps _mm256_hadd_ps
+#elif LANE_WIDTH==4
+#define __lane __m128
+#define __add_ps _mm_add_ps
+#define __sub_ps _mm_sub_ps
+#define __mul_ps _mm_mul_ps
+#define __div_ps _mm_div_ps
+#define __or_ps _mm_or_ps
+#define __and_ps _mm_and_ps
+#define __set1_ps _mm_set1_ps
+#define __sqrt_ps _mm_sqrt_ps
+#define __setzero_ps _mm_setzero_ps
+#define __casti_ps _mm_castsi128_ps
+#define __cmp_ps _mm_cmp_ps
+#define __set1_epi32 _mm_set1_epi32
+#define __xor_ps _mm_xor_ps
+#define __pow_ps _mm_pow_ps
+#define __hadd_ps _mm_hadd_ps
+#else
+#error "LANE_WIDTH not 4 or 8"
+#endif
 
 #include "basic.h"
 
@@ -14,83 +50,105 @@
 #endif
 
 union f32_lane {
-	__m256 v;
-	f32 f[LANE_WIDTH];
+	__lane v;
+	i32 i[LANE_WIDTH];
+	f32 f[LANE_WIDTH] = {};
 
-	void operator+=(f32_lane x) {v = _mm256_add_ps(v, x.v);}
-	void operator-=(f32_lane x) {v = _mm256_sub_ps(v, x.v);}
-	void operator*=(f32_lane x) {v = _mm256_mul_ps(v, x.v);}
-	void operator/=(f32_lane x) {v = _mm256_div_ps(v, x.v);}
+	void operator+=(const f32_lane& x) {v = __add_ps(v, x.v);}
+	void operator-=(const f32_lane& x) {v = __sub_ps(v, x.v);}
+	void operator*=(const f32_lane& x) {v = __mul_ps(v, x.v);}
+	void operator/=(const f32_lane& x) {v = __div_ps(v, x.v);}
 
-	void operator*=(f32 _s) {__m256 s = _mm256_set1_ps(_s);
-							 v = _mm256_mul_ps(v, s);}
-	void operator/=(f32 _s) {__m256 s = _mm256_set1_ps(_s);
-							 v = _mm256_div_ps(v, s);}
+	void operator*=(f32 _s) {__lane s = __set1_ps(_s);
+							 v = __mul_ps(v, s);}
+	void operator/=(f32 _s) {__lane s = __set1_ps(_s);
+							 v = __div_ps(v, s);}
 
-	f32_lane operator-() {__m256 _z = _mm256_setzero_ps();
-						  return {_mm256_sub_ps(_z,v)};}
+	void operator|=(const f32_lane& x) {v = __or_ps(v,x.v);}
+	void operator&=(const f32_lane& x) {v = __and_ps(v,x.v);}
+	f32_lane operator~() {return {__xor_ps(v,__casti_ps(__set1_epi32(0xffffffff)))};}
+
+	f32_lane operator-() {__lane _z = __setzero_ps();
+						  return {__sub_ps(_z,v)};}
+
+	void set_all_int(i32 _i) {v = __casti_ps(__set1_epi32(_i));}
 
 	f32_lane() {}
-	f32_lane(f32 _v) {v = _mm256_set1_ps(_v);}
-	f32_lane(__m256 _v) {v = _v;}
+	f32_lane(f32 _v) {v = __set1_ps(_v);}
+	f32_lane(i32 _v) {v = __casti_ps(__set1_epi32(_v));}
+	f32_lane(__lane _v) {v = _v;}
 
 	f32_lane(const f32_lane& o) {memcpy(this,&o,sizeof(f32_lane));}
 	f32_lane(const f32_lane&& o) {memcpy(this,&o,sizeof(f32_lane));}
 	f32_lane operator=(const f32_lane& o) {memcpy(this,&o,sizeof(f32_lane)); return *this;}
 	f32_lane operator=(const f32_lane&& o) {memcpy(this,&o,sizeof(f32_lane)); return *this;}
 };
-static_assert(sizeof(f32_lane) == 4 * 8, "sizeof(f32_lane) != 32");
+static_assert(sizeof(f32_lane) == LANE_WIDTH * 4, "sizeof(f32_lane) != LANE_WIDTH * 4");
 
 union v3_lane {
 	struct {
-		__m256 x, y, z;
+		__lane x, y, z;
 	};
 	struct {
 		f32 xf[LANE_WIDTH], yf[LANE_WIDTH], zf[LANE_WIDTH];
 	};
 	f32 af[3 * LANE_WIDTH];
 	f32_lane v[3];
-	__m256 a[3] = {};
+	__lane a[3] = {};
 
-	void operator+=(v3_lane v) {x = _mm256_add_ps(x, v.x);
-						   		y = _mm256_add_ps(y, v.y);
-						   		z = _mm256_add_ps(z, v.z);}
-	void operator-=(v3_lane v) {x = _mm256_sub_ps(x, v.x);
-						   		y = _mm256_sub_ps(y, v.y);
-						   		z = _mm256_sub_ps(z, v.z);}
-	void operator*=(v3_lane v) {x = _mm256_mul_ps(x, v.x);
-						   		y = _mm256_mul_ps(y, v.y);
-						   		z = _mm256_mul_ps(z, v.z);}
-	void operator/=(v3_lane v) {x = _mm256_div_ps(x, v.x);
-						   		y = _mm256_div_ps(y, v.y);
-						   		z = _mm256_div_ps(z, v.z);}
+	void operator+=(const v3_lane& o) {x = __add_ps(x, o.x);
+						   		y = __add_ps(y, o.y);
+						   		z = __add_ps(z, o.z);}
+	void operator-=(const v3_lane& o) {x = __sub_ps(x, o.x);
+						   		y = __sub_ps(y, o.y);
+						   		z = __sub_ps(z, o.z);}
+	void operator*=(const v3_lane& o) {x = __mul_ps(x, o.x);
+						   		y = __mul_ps(y, o.y);
+						   		z = __mul_ps(z, o.z);}
+	void operator/=(const v3_lane& o) {x = __div_ps(x, o.x);
+						   		y = __div_ps(y, o.y);
+						   		z = __div_ps(z, o.z);}
 	void operator*=(f32_lane s) {
-							x = _mm256_mul_ps(x, s.v);
-						    y = _mm256_mul_ps(y, s.v);
-						    z = _mm256_mul_ps(z, s.v);}
+							x = __mul_ps(x, s.v);
+						    y = __mul_ps(y, s.v);
+						    z = __mul_ps(z, s.v);}
 	void operator/=(f32_lane s) {
-							x = _mm256_div_ps(x, s.v);
-						    y = _mm256_div_ps(y, s.v);
-						    z = _mm256_div_ps(z, s.v);}
-	void operator*=(f32 s) {__m256 _s = _mm256_set1_ps(s);
-							x = _mm256_mul_ps(x, _s);
-						    y = _mm256_mul_ps(y, _s);
-						    z = _mm256_mul_ps(z, _s);}
-	void operator/=(f32 s) {__m256 _s = _mm256_set1_ps(s);
-							x = _mm256_div_ps(x, _s);
-						    y = _mm256_div_ps(y, _s);
-						    z = _mm256_div_ps(z, _s);}
-	v3_lane operator-() {__m256 _z = _mm256_setzero_ps();
-					return {_mm256_sub_ps(_z,x),
-							_mm256_sub_ps(_z,y),
-							_mm256_sub_ps(_z,z)};}
+							x = __div_ps(x, s.v);
+						    y = __div_ps(y, s.v);
+						    z = __div_ps(z, s.v);}
+	void operator*=(f32 s) {__lane _s = __set1_ps(s);
+							x = __mul_ps(x, _s);
+						    y = __mul_ps(y, _s);
+						    z = __mul_ps(z, _s);}
+	void operator/=(f32 s) {__lane _s = __set1_ps(s);
+							x = __div_ps(x, _s);
+						    y = __div_ps(y, _s);
+						    z = __div_ps(z, _s);}
+
+	void operator|=(f32_lane o) {x = __or_ps(x,o.v);
+								 y = __or_ps(y,o.v);
+								 z = __or_ps(z,o.v);}
+	void operator&=(f32_lane o) {x = __and_ps(x,o.v);
+								 y = __and_ps(y,o.v);
+								 z = __and_ps(z,o.v);}
+	void operator|=(const v3_lane& o) {x = __or_ps(x,o.x);
+								y = __or_ps(y,o.y);
+								z = __or_ps(z,o.z);}
+	void operator&=(const v3_lane& o) {x = __and_ps(x,o.x);
+								y = __and_ps(y,o.y);
+								z = __and_ps(z,o.z);}
+
+	v3_lane operator-() const {__lane _z = __setzero_ps();
+					return {__sub_ps(_z,x),
+							__sub_ps(_z,y),
+							__sub_ps(_z,z)};}
 
 	v3_lane() {}
-	v3_lane(f32 _x) {x = y = z = _mm256_set1_ps(_x);}
-	v3_lane(f32_lane _x) {x = y = z = _x.v;}
-	v3_lane(f32 _x, f32 _y, f32 _z) {x = _mm256_set1_ps(_x); 
-									 y = _mm256_set1_ps(_y); 
-									 z = _mm256_set1_ps(_z);}
+	v3_lane(f32 _x) {x = y = z = __set1_ps(_x);}
+	v3_lane(const f32_lane& _x) {x = y = z = _x.v;}
+	v3_lane(f32 _x, f32 _y, f32 _z) {x = __set1_ps(_x); 
+									 y = __set1_ps(_y); 
+									 z = __set1_ps(_z);}
 	v3_lane(f32_lane _x, f32_lane _y, f32_lane _z) {
 									 x = _x.v; 
 									 y = _y.v; 
@@ -101,183 +159,326 @@ union v3_lane {
 	v3_lane operator=(const v3_lane& o) {memcpy(this,&o,sizeof(v3_lane)); return *this;}
 	v3_lane operator=(const v3_lane&& o) {memcpy(this,&o,sizeof(v3_lane)); return *this;}
 };
-static_assert(sizeof(v3_lane) == 12 * 8, "sizeof(v3_lane) != 96");
+static_assert(sizeof(v3_lane) == LANE_WIDTH * 12, "sizeof(v3_lane) != LANE_WIDTH * 12");
 
-v3_lane operator+(v3_lane l, v3_lane r) {
+v3_lane operator+(const v3_lane& l, const v3_lane& r) {
 	return 
-	{_mm256_add_ps(l.x, r.x),
-	 _mm256_add_ps(l.y, r.y),
-	 _mm256_add_ps(l.z, r.z)};
+	{__add_ps(l.x, r.x),
+	 __add_ps(l.y, r.y),
+	 __add_ps(l.z, r.z)};
 }
-v3_lane operator+(v3_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
+v3_lane operator+(const v3_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
 	return 
-	{_mm256_add_ps(l.x, r),
-	 _mm256_add_ps(l.y, r),
-	 _mm256_add_ps(l.z, r)};
+	{__add_ps(l.x, r),
+	 __add_ps(l.y, r),
+	 __add_ps(l.z, r)};
 }
-v3_lane operator+(f32 _l, v3_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
+v3_lane operator+(const f32 _l, const v3_lane& r) {
+	__lane l = __set1_ps(_l);
 	return 
-	{_mm256_add_ps(l, r.x),
-	 _mm256_add_ps(l, r.y),
-	 _mm256_add_ps(l, r.z)};
+	{__add_ps(l, r.x),
+	 __add_ps(l, r.y),
+	 __add_ps(l, r.z)};
 }
-v3_lane operator-(v3_lane l, v3_lane r) {
+v3_lane operator+(const v3_lane& l, const v3 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	__lane z = __set1_ps(r.z);
 	return 
-	{_mm256_sub_ps(l.x, r.x),
-	 _mm256_sub_ps(l.y, r.y),
-	 _mm256_sub_ps(l.z, r.z)};
+	{__add_ps(l.x, x),
+	 __add_ps(l.y, y),
+	 __add_ps(l.z, z)};
 }
-v3_lane operator-(v3_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
+v3_lane operator+(const v3 l, const v3_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	__lane z = __set1_ps(l.z);
 	return 
-	{_mm256_sub_ps(l.x, r),
-	 _mm256_sub_ps(l.y, r),
-	 _mm256_sub_ps(l.z, r)};
+	{__add_ps(x, r.x),
+	 __add_ps(y, r.y),
+	 __add_ps(z, r.z)};
 }
-v3_lane operator-(f32 _l, v3_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
+v3_lane operator-(const v3_lane& l, const v3_lane& r) {
 	return 
-	{_mm256_sub_ps(l, r.x),
-	 _mm256_sub_ps(l, r.y),
-	 _mm256_sub_ps(l, r.z)};
+	{__sub_ps(l.x, r.x),
+	 __sub_ps(l.y, r.y),
+	 __sub_ps(l.z, r.z)};
 }
-v3_lane operator*(v3_lane l, v3_lane r) {
+v3_lane operator-(const v3_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
 	return 
-	{_mm256_mul_ps(l.x, r.x),
-	 _mm256_mul_ps(l.y, r.y),
-	 _mm256_mul_ps(l.z, r.z)};
+	{__sub_ps(l.x, r),
+	 __sub_ps(l.y, r),
+	 __sub_ps(l.z, r)};
 }
-v3_lane operator*(v3_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
+v3_lane operator-(const f32 _l, const v3_lane& r) {
+	__lane l = __set1_ps(_l);
 	return 
-	{_mm256_mul_ps(l.x, r),
-	 _mm256_mul_ps(l.y, r),
-	 _mm256_mul_ps(l.z, r)};
+	{__sub_ps(l, r.x),
+	 __sub_ps(l, r.y),
+	 __sub_ps(l, r.z)};
 }
-v3_lane operator*(f32 _l, v3_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
+v3_lane operator-(const v3_lane& l, const v3 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	__lane z = __set1_ps(r.z);
 	return 
-	{_mm256_mul_ps(l, r.x),
-	 _mm256_mul_ps(l, r.y),
-	 _mm256_mul_ps(l, r.z)};
+	{__sub_ps(l.x, x),
+	 __sub_ps(l.y, y),
+	 __sub_ps(l.z, z)};
 }
-v3_lane operator/(v3_lane l, v3_lane r) {
+v3_lane operator-(const v3 l, const v3_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	__lane z = __set1_ps(l.z);
 	return 
-	{_mm256_div_ps(l.x, r.x),
-	 _mm256_div_ps(l.y, r.y),
-	 _mm256_div_ps(l.z, r.z)};
+	{__sub_ps(x, r.x),
+	 __sub_ps(y, r.y),
+	 __sub_ps(z, r.z)};
 }
-v3_lane operator/(v3_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
+v3_lane operator*(const v3_lane& l, const v3_lane& r) {
 	return 
-	{_mm256_div_ps(l.x, r),
-	 _mm256_div_ps(l.y, r),
-	 _mm256_div_ps(l.z, r)};
+	{__mul_ps(l.x, r.x),
+	 __mul_ps(l.y, r.y),
+	 __mul_ps(l.z, r.z)};
 }
-v3_lane operator/(f32 _l, v3_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
+v3_lane operator*(const v3_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
 	return 
-	{_mm256_div_ps(l, r.x),
-	 _mm256_div_ps(l, r.y),
-	 _mm256_div_ps(l, r.z)};
+	{__mul_ps(l.x, r),
+	 __mul_ps(l.y, r),
+	 __mul_ps(l.z, r)};
 }
-
-i32 operator==(v3_lane l, v3_lane r) {
-	i32 cmpx = _mm256_movemask_ps(_mm256_cmp_ps(l.x,r.x,_CMP_EQ_OQ));
-	i32 cmpy = _mm256_movemask_ps(_mm256_cmp_ps(l.y,r.y,_CMP_EQ_OQ));
-	i32 cmpz = _mm256_movemask_ps(_mm256_cmp_ps(l.z,r.z,_CMP_EQ_OQ));
-	return cmpx & cmpy & cmpz;
+v3_lane operator*(const v3_lane& l, const v3 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	__lane z = __set1_ps(r.z);
+	return 
+	{__mul_ps(l.x, x),
+	 __mul_ps(l.y, y),
+	 __mul_ps(l.z, z)};
 }
-i32 operator!=(v3_lane l, v3_lane r) {
-	i32 cmpx = _mm256_movemask_ps(_mm256_cmp_ps(l.x,r.x,_CMP_NEQ_OQ));
-	i32 cmpy = _mm256_movemask_ps(_mm256_cmp_ps(l.y,r.y,_CMP_NEQ_OQ));
-	i32 cmpz = _mm256_movemask_ps(_mm256_cmp_ps(l.z,r.z,_CMP_NEQ_OQ));
-	return cmpx | cmpy | cmpz;
+v3_lane operator*(const v3 l, const v3_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	__lane z = __set1_ps(l.z);
+	return 
+	{__mul_ps(x, r.x),
+	 __mul_ps(y, r.y),
+	 __mul_ps(z, r.z)};
 }
-
-v3_lane pow(v3_lane v, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
-	return {_mm256_pow_ps(v.x,r),
-			_mm256_pow_ps(v.y,r),
-			_mm256_pow_ps(v.z,r)};
+v3_lane operator*(const f32 _l, const v3_lane& r) {
+	__lane l = __set1_ps(_l);
+	return 
+	{__mul_ps(l, r.x),
+	 __mul_ps(l, r.y),
+	 __mul_ps(l, r.z)};
 }
-
-f32_lane operator+(f32_lane l, f32_lane r) {
-	return {_mm256_add_ps(l.v, r.v)};
+v3_lane operator/(const v3_lane& l, const v3_lane& r) {
+	return 
+	{__div_ps(l.x, r.x),
+	 __div_ps(l.y, r.y),
+	 __div_ps(l.z, r.z)};
 }
-f32_lane operator+(f32_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
-	return {_mm256_add_ps(l.v, r)};
+v3_lane operator/(const v3_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return 
+	{__div_ps(l.x, r),
+	 __div_ps(l.y, r),
+	 __div_ps(l.z, r)};
 }
-f32_lane operator+(f32 _l, f32_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
-	return {_mm256_add_ps(l, r.v)};
+v3_lane operator/(const f32 _l, const v3_lane& r) {
+	__lane l = __set1_ps(_l);
+	return 
+	{__div_ps(l, r.x),
+	 __div_ps(l, r.y),
+	 __div_ps(l, r.z)};
 }
-f32_lane operator-(f32_lane l, f32_lane r) {
-	return {_mm256_sub_ps(l.v, r.v)};
+v3_lane operator/(const v3_lane& l, const v3 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	__lane z = __set1_ps(r.z);
+	return 
+	{__div_ps(l.x, x),
+	 __div_ps(l.y, y),
+	 __div_ps(l.z, z)};
 }
-f32_lane operator-(f32_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
-	return {_mm256_sub_ps(l.v, r)};
-}
-f32_lane operator-(f32 _l, f32_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
-	return {_mm256_sub_ps(l, r.v)};
-}
-f32_lane operator*(f32_lane l, f32_lane r) {
-	return {_mm256_mul_ps(l.v, r.v)};
-}
-f32_lane operator*(f32_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
-	return {_mm256_mul_ps(l.v, r)};
-}
-f32_lane operator*(f32 _l, f32_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
-	return {_mm256_mul_ps(l, r.v)};
-}
-f32_lane operator/(f32_lane l, f32_lane r) {
-	return {_mm256_div_ps(l.v, r.v)};
-}
-f32_lane operator/(f32_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
-	return {_mm256_div_ps(l.v, r)};
-}
-f32_lane operator/(f32 _l, f32_lane r) {
-	__m256 l = _mm256_set1_ps(_l);
-	return {_mm256_div_ps(l, r.v)};
-}
-
-i32 operator==(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_EQ_OQ));
-}
-i32 operator!=(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_NEQ_OQ));
-}
-
-i32 operator>(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_GT_OS));
-}
-i32 operator<(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_LT_OS));
-}
-i32 operator>=(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_GE_OS));
-}
-i32 operator<=(f32_lane l, f32_lane r) {
-	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_LE_OS));
+v3_lane operator/(const v3 l, const v3_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	__lane z = __set1_ps(l.z);
+	return 
+	{__div_ps(x, r.x),
+	 __div_ps(y, r.y),
+	 __div_ps(z, r.z)};
 }
 
-f32_lane pow(f32_lane l, f32 _r) {
-	__m256 r = _mm256_set1_ps(_r);
-	return {_mm256_pow_ps(l.v,r)};
+f32_lane operator==(const v3_lane& l, const v3_lane& r) {
+	__lane cmpx = __cmp_ps(l.x,r.x,_CMP_EQ_OQ);
+	__lane cmpy = __cmp_ps(l.y,r.y,_CMP_EQ_OQ);
+	__lane cmpz = __cmp_ps(l.z,r.z,_CMP_EQ_OQ);
+	return __and_ps(__and_ps(cmpx,cmpy),cmpz);
 }
-f32_lane sqrt(f32_lane l) {
-	return {_mm256_sqrt_ps(l.v)};
+f32_lane operator!=(const v3_lane& l, const v3_lane& r) {
+	__lane cmpx = __cmp_ps(l.x,r.x,_CMP_NEQ_OQ);
+	__lane cmpy = __cmp_ps(l.y,r.y,_CMP_NEQ_OQ);
+	__lane cmpz = __cmp_ps(l.z,r.z,_CMP_NEQ_OQ);
+	return __or_ps(__or_ps(cmpx,cmpy),cmpz);
 }
 
-std::ostream& operator<<(std::ostream& out, v3_lane r) {
+v3_lane pow(const v3_lane& v, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return {__pow_ps(v.x,r),
+			__pow_ps(v.y,r),
+			__pow_ps(v.z,r)};
+}
+
+f32_lane operator&(const f32_lane& l, const f32_lane& r) {
+	return {__and_ps(l.v, r.v)};
+}
+f32_lane operator|(const f32_lane& l, const f32_lane& r) {
+	return {__or_ps(l.v, r.v)};
+}
+
+v3_lane operator&(const v3_lane& l, const f32_lane& r) {
+	return {__and_ps(l.x, r.v),
+			__and_ps(l.y, r.v),
+			__and_ps(l.z, r.v)};
+}
+v3_lane operator|(const v3_lane& l, const f32_lane& r) {
+	return {__or_ps(l.x, r.v),
+			__or_ps(l.y, r.v),
+			__or_ps(l.z, r.v)};
+}
+v3_lane operator&(const f32_lane& l, const v3_lane& r) {
+	return {__and_ps(l.v, r.x),
+			__and_ps(l.v, r.y),
+			__and_ps(l.v, r.z)};
+}
+v3_lane operator|(const f32_lane& l, const v3_lane& r) {
+	return {__or_ps(l.v, r.x),
+			__or_ps(l.v, r.y),
+			__or_ps(l.v, r.z)};
+}
+
+f32_lane operator+(const f32_lane& l, const f32_lane& r) {
+	return {__add_ps(l.v, r.v)};
+}
+f32_lane operator+(const f32_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return {__add_ps(l.v, r)};
+}
+f32_lane operator+(const f32 _l, const f32_lane& r) {
+	__lane l = __set1_ps(_l);
+	return {__add_ps(l, r.v)};
+}
+f32_lane operator-(const f32_lane& l, const f32_lane& r) {
+	return {__sub_ps(l.v, r.v)};
+}
+f32_lane operator-(const f32_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return {__sub_ps(l.v, r)};
+}
+f32_lane operator-(const f32 _l, const f32_lane& r) {
+	__lane l = __set1_ps(_l);
+	return {__sub_ps(l, r.v)};
+}
+f32_lane operator*(const f32_lane& l, const f32_lane& r) {
+	return {__mul_ps(l.v, r.v)};
+}
+f32_lane operator*(const f32_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return {__mul_ps(l.v, r)};
+}
+f32_lane operator*(const f32 _l, const f32_lane& r) {
+	__lane l = __set1_ps(_l);
+	return {__mul_ps(l, r.v)};
+}
+f32_lane operator/(const f32_lane& l, const f32_lane& r) {
+	return {__div_ps(l.v, r.v)};
+}
+f32_lane operator/(const f32_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return {__div_ps(l.v, r)};
+}
+f32_lane operator/(const f32 _l, const f32_lane& r) {
+	__lane l = __set1_ps(_l);
+	return {__div_ps(l, r.v)};
+}
+
+f32_lane operator==(const f32_lane& l, const f32_lane& r) {
+	return __cmp_ps(l.v,r.v,_CMP_EQ_OQ);
+}
+f32_lane operator!=(const f32_lane& l, const f32_lane& r) {
+	return __cmp_ps(l.v,r.v,_CMP_NEQ_OQ);
+}
+f32_lane operator>(const f32_lane& l, const f32_lane& r) {
+	return __cmp_ps(l.v,r.v,_CMP_GT_OS);
+}
+f32_lane operator<(const f32_lane& l, const f32_lane& r) {
+	return __cmp_ps(l.v,r.v,_CMP_LT_OS);
+}
+f32_lane operator>=(const f32_lane& l, const f32_lane& r) {
+	return __cmp_ps(l.v,r.v,_CMP_GE_OS);
+}
+f32_lane operator<=(const f32_lane& l, const f32_lane& r) {
+	return __cmp_ps(l.v,r.v,_CMP_LE_OS);
+}
+f32_lane operator==(const f32_lane& l, f32 r) {
+	return __cmp_ps(l.v,__set1_ps(r),_CMP_EQ_OQ);
+}
+f32_lane operator!=(const f32_lane& l, f32 r) {
+	return __cmp_ps(l.v,__set1_ps(r),_CMP_NEQ_OQ);
+}
+f32_lane operator>(const f32_lane& l, f32 r) {
+	return __cmp_ps(l.v,__set1_ps(r),_CMP_GT_OS);
+}
+f32_lane operator<(const f32_lane& l, f32 r) {
+	return __cmp_ps(l.v,__set1_ps(r),_CMP_LT_OS);
+}
+f32_lane operator>=(const f32_lane& l, f32 r) {
+	return __cmp_ps(l.v,__set1_ps(r),_CMP_GE_OS);
+}
+f32_lane operator<=(const f32_lane& l, f32 r) {
+	return __cmp_ps(l.v,__set1_ps(r),_CMP_LE_OS);
+}
+f32_lane operator==(f32 l, const f32_lane& r) {
+	return __cmp_ps(__set1_ps(l),r.v,_CMP_EQ_OQ);
+}
+f32_lane operator!=(f32 l, const f32_lane& r) {
+	return __cmp_ps(__set1_ps(l),r.v,_CMP_NEQ_OQ);
+}
+f32_lane operator>(f32 l, const f32_lane& r) {
+	return __cmp_ps(__set1_ps(l),r.v,_CMP_GT_OS);
+}
+f32_lane operator<(f32 l, const f32_lane& r) {
+	return __cmp_ps(__set1_ps(l),r.v,_CMP_LT_OS);
+}
+f32_lane operator>=(f32 l, const f32_lane& r) {
+	return __cmp_ps(__set1_ps(l),r.v,_CMP_GE_OS);
+}
+f32_lane operator<=(f32 l, const f32_lane& r) {
+	return __cmp_ps(__set1_ps(l),r.v,_CMP_LE_OS);
+}
+
+f32_lane pow(const f32_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return {__pow_ps(l.v,r)};
+}
+
+f32_lane sqrt(const f32_lane& l) {
+	return {__sqrt_ps(l.v)};
+}
+f32 sum(const f32_lane& l) {
+	__lane v = l.v;
+	for(i32 i = 1; i < LANE_WIDTH; i *= 2) {
+		v = __hadd_ps(v,v);
+	}
+	return f32_lane{v}.f[0];
+}
+
+std::ostream& operator<<(std::ostream& out, const v3_lane& r) {
 	out << "{";
 	for(i32 i = 0; i < LANE_WIDTH; i++) {
 		out << "{" << r.xf[i] << "," << r.yf[i] << "," << r.zf[i] << "}";
@@ -286,7 +487,7 @@ std::ostream& operator<<(std::ostream& out, v3_lane r) {
 	out << "}";
 	return out;
 }
-std::ostream& operator<<(std::ostream& out, f32_lane r) {
+std::ostream& operator<<(std::ostream& out, const f32_lane& r) {
 	out << "{";
 	for(i32 i = 0; i < LANE_WIDTH; i++) {
 		out << r.f[i];
@@ -296,42 +497,75 @@ std::ostream& operator<<(std::ostream& out, f32_lane r) {
 	return out;
 }
 
-f32_lane dot(v3_lane l, v3_lane r) {
-	__m256 x = _mm256_mul_ps(l.x,r.x);
-	__m256 y = _mm256_mul_ps(l.y,r.y);
-	__m256 z = _mm256_mul_ps(l.z,r.z);
-	return _mm256_add_ps(_mm256_add_ps(x,y),z);
+v3_lane operator*(const v3 l, const f32_lane& r) {
+	return v3_lane{l.x * r, l.y * r, l.z * r};
 }
 
-v3_lane reflect(v3_lane v, v3_lane n) {
-	return v - 2.0f * dot(n, v) * n;
+f32_lane dot(const v3_lane& l, const v3_lane& r) {
+	__lane x = __mul_ps(l.x,r.x);
+	__lane y = __mul_ps(l.y,r.y);
+	__lane z = __mul_ps(l.z,r.z);
+	return __add_ps(__add_ps(x,y),z);
 }
-f32_lane lensq(v3_lane v) {
+
+v3_lane reflect(const v3_lane& v, const v3_lane& n) {
+	return v - f32_lane{2.0f} * dot(n, v) * n;
+}
+f32_lane lensq(const v3_lane& v) {
 	return dot(v, v);
 }
-f32_lane len(v3_lane v) {
-	return _mm256_sqrt_ps(lensq(v).v);
+f32_lane len(const v3_lane& v) {
+	return __sqrt_ps(lensq(v).v);
 }
-v3_lane norm(v3_lane v) {
+v3_lane norm(const v3_lane& v) {
 	return v / len(v);
 }
-v3_lane lerp(v3_lane min, v3_lane max, f32_lane dist) {
+v3_lane lerp(const v3_lane& min, const v3_lane& max, const f32_lane& dist) {
 	return (max - min) * dist + min;
 }
 
-v3_lane cross(v3_lane l, v3_lane r) {
-	return {_mm256_mul_ps(l.y,r.z) -
-			_mm256_mul_ps(l.z,r.y), 
-			_mm256_mul_ps(l.z,r.x) - 
-			_mm256_mul_ps(l.x,r.z), 
-			_mm256_mul_ps(l.x,r.y) - 
-			_mm256_mul_ps(l.y,r.x)};
+v3_lane cross(const v3_lane& l, const v3_lane& r) {
+	return {__mul_ps(l.y,r.z) -
+			__mul_ps(l.z,r.y), 
+			__mul_ps(l.z,r.x) - 
+			__mul_ps(l.x,r.z), 
+			__mul_ps(l.x,r.y) - 
+			__mul_ps(l.y,r.x)};
 }
 
 struct ray_lane {
 	v3_lane pos, dir;
-	v3_lane get(f32_lane t) {return pos + t * dir;}
+	v3_lane get(const f32_lane& t) const {return pos + t * dir;}
 };
+
+f32_lane randf_lane() {
+	f32_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		f32 r = randf_cpp();
+		ret.f[i] = r;
+	}
+	return ret;
+}
+v3_lane random_leunit_lane() {
+	v3_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		const v3 r = random_leunit();
+		ret.xf[i] = r.x;
+		ret.yf[i] = r.y;
+		ret.zf[i] = r.z;
+	}
+	return ret;
+}
+v3_lane random_ledisk_lane() {
+	v3_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		const v3 r = random_ledisk();
+		ret.xf[i] = r.x;
+		ret.yf[i] = r.y;
+		ret.zf[i] = r.z;
+	}
+	return ret;	
+}
 
 void test_simd() {
 

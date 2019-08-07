@@ -7,6 +7,9 @@
 
 #include <iostream>
 
+#define USE_THREADING
+#define LANE_WIDTH 4
+
 #include "basic.h"
 #include "image.h"
 #include "math.h"

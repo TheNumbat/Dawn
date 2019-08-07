@@ -1,5 +1,5 @@
 TODO:
 
-SIMD
+SIMD optimizations
 raytracing the next week
 start PBRT book
