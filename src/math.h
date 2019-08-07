@@ -6,8 +6,6 @@
 #include <math.h>
 #include <random>
 
-#include "math_simd.h"
-
 #ifdef _MSC_VER
 #pragma warning(disable : 4201)
 #endif

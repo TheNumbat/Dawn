@@ -48,7 +48,7 @@ struct camera {
 		
 		jitx /= (f32)wid;
 		jity /= (f32)hei;
-		u += jitx; v += jity;
+		// u += jitx; v += jity;
 
 		v3 lens_pos = aperture * random_ledisk();
 		v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
