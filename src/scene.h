@@ -60,7 +60,7 @@ struct scene {
 
 	object_list list;
 	camera cam;
-	i32 samples = 1, max_depth = 1;
+	i32 samples = 1, max_depth = 4;
 
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;

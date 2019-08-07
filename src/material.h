@@ -22,7 +22,7 @@ struct lambertian {
 
 	scatter_lane bsdf(const ray_lane&, const trace_lane& surface) const {
 		scatter_lane ret;
-		v3_lane out = surface.pos + surface.normal + random_leunit_lane();
+		v3_lane out = surface.pos + surface.normal + random_leunit();
 		ret.out = {surface.pos, out - surface.pos};
 		ret.attenuation = albedo;
 		return ret;
@@ -36,7 +36,7 @@ struct metal {
 	scatter_lane bsdf(const ray_lane& incoming, const trace_lane& surface) const {
 		scatter_lane ret;
 		v3_lane r = reflect(norm(incoming.dir),surface.normal);
-		ret.out = {surface.pos, r + rough * random_leunit_lane()};
+		ret.out = {surface.pos, r + rough * random_leunit()};
 		ret.absorbed = dot(r, surface.normal) <= 0.0f;
 		ret.attenuation = albedo;
 		return ret;

@@ -149,6 +149,9 @@ union v3_lane {
 	v3_lane(f32 _x, f32 _y, f32 _z) {x = __set1_ps(_x); 
 									 y = __set1_ps(_y); 
 									 z = __set1_ps(_z);}
+	v3_lane(v3 _v) {x = __set1_ps(_v.x); 
+					y = __set1_ps(_v.y); 
+					z = __set1_ps(_v.z);}
 	v3_lane(f32_lane _x, f32_lane _y, f32_lane _z) {
 									 x = _x.v; 
 									 y = _y.v; 
