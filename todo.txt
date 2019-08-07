@@ -8,7 +8,8 @@ SIMD optimizations
 raytracing the next week
 start PBRT book
 
-Performance: 640x480x128
-	Base Scalar: 107s
-	SIMD v3: 81.5s
-
+Performance: 640x480x128 - Debug-Optimized Build
+	
+	Base Scalar : 107s		{ Release}
+	SIMD v3     : 81.5s 	{29s Release}
+	Inlining    : 29s		{Helps in Debug-Optimized Build, SIMD v3|Release is the same}

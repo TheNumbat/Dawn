@@ -50,83 +50,83 @@ union v3 {
 };
 static_assert(sizeof(v3) == 16, "sizeof(v3) != 16");
 
-v3 operator+(const v3 l, const v3 r) {
+inline v3 operator+(const v3 l, const v3 r) {
 	return {_mm_add_ps(l.v,r.v)};
 }
-v3 operator+(const v3 l, const f32 r) {
+inline v3 operator+(const v3 l, const f32 r) {
 	return {_mm_add_ps(l.v,_mm_set1_ps(r))};
 }
-v3 operator+(const f32 l, const v3 r) {
+inline v3 operator+(const f32 l, const v3 r) {
 	return {_mm_add_ps(_mm_set1_ps(l),r.v)};
 }
-v3 operator-(const v3 l, const v3 r) {
+inline v3 operator-(const v3 l, const v3 r) {
 	return {_mm_sub_ps(l.v,r.v)};
 }
-v3 operator-(const v3 l, const f32 r) {
+inline v3 operator-(const v3 l, const f32 r) {
 	return {_mm_sub_ps(l.v,_mm_set1_ps(r))};
 }
-v3 operator-(const f32 l, const v3 r) {
+inline v3 operator-(const f32 l, const v3 r) {
 	return {_mm_sub_ps(_mm_set1_ps(l),r.v)};
 }
-v3 operator*(const v3 l, const v3 r) {
+inline v3 operator*(const v3 l, const v3 r) {
 	return {_mm_mul_ps(l.v,r.v)};
 }
-v3 operator*(const v3 l, const f32 r) {
+inline v3 operator*(const v3 l, const f32 r) {
 	return {_mm_mul_ps(l.v,_mm_set1_ps(r))};
 }
-v3 operator*(const f32 l, const v3 r) {
+inline v3 operator*(const f32 l, const v3 r) {
 	return {_mm_mul_ps(_mm_set1_ps(l),r.v)};
 }
-v3 operator/(const v3 l, const v3 r) {
+inline v3 operator/(const v3 l, const v3 r) {
 	return {_mm_div_ps(l.v,r.v)};
 }
-v3 operator/(const v3 l, const f32 r) {
+inline v3 operator/(const v3 l, const f32 r) {
 	return {_mm_div_ps(l.v,_mm_set1_ps(r))};
 }
-v3 operator/(const f32 l, const v3 r) {
+inline v3 operator/(const f32 l, const v3 r) {
 	return {_mm_div_ps(_mm_set1_ps(l),r.v)};
 }
-bool operator==(const v3 l, const v3 r) {
+inline bool operator==(const v3 l, const v3 r) {
 	return (_mm_movemask_ps(_mm_cmpeq_ps(l.v, r.v)) & 0b111) == 0b111;
 }
-bool operator!=(const v3 l, const v3 r) {
+inline bool operator!=(const v3 l, const v3 r) {
 	return (_mm_movemask_ps(_mm_cmpeq_ps(l.v, r.v)) & 0b111) != 0b111;
 }
-bool close(const f32 l, const f32 r, const f32 e) {
+inline bool close(const f32 l, const f32 r, const f32 e) {
 	return (l >= r - e) && (l <= r + e);
 }
-bool close(const v3 l, const v3 r, f32 e) {
+inline bool close(const v3 l, const v3 r, f32 e) {
 	return close(l.x,r.x,e) && close(l.y,r.y,e) && close(l.z,r.z,e);
 }
 
-v3 pow(const v3 v, const f32 r) {
+inline v3 pow(const v3 v, const f32 r) {
 	return {_mm_pow_ps(v.v, _mm_set1_ps(r))};
 }
-f32 dot(const v3 l, const v3 r) {
+inline f32 dot(const v3 l, const v3 r) {
 	return v3{_mm_dp_ps(l.v, r.v, 0b01110001)}.x;
 }
 
-const v3 reflect(const v3 v, const v3 n) {
+inline v3 reflect(const v3 v, const v3 n) {
 	return v - 2.0f * dot(n, v) * n;
 }
-const f32 lensq(const v3 v) {
+inline f32 lensq(const v3 v) {
 	return dot(v, v);
 }
-const f32 len(const v3 v) {
+inline f32 len(const v3 v) {
 	return sqrtf(lensq(v));
 }
 
-v3 norm(const v3 v) {
+inline v3 norm(const v3 v) {
 	return v / len(v);
 }
-v3 cross(v3 l, v3 r) {
+inline v3 cross(v3 l, v3 r) {
 	__m128 ret = _mm_sub_ps(
 		_mm_mul_ps(r.v, _mm_shuffle_ps(l.v, l.v, _MM_SHUFFLE(3, 0, 2, 1))), 
 		_mm_mul_ps(l.v, _mm_shuffle_ps(r.v, r.v, _MM_SHUFFLE(3, 0, 2, 1))));
 	return {_mm_shuffle_ps(ret, ret, _MM_SHUFFLE(3, 0, 2, 1 ))};
 }
 
-v3 lerp(v3 min, v3 max, f32 dist) {
+inline v3 lerp(v3 min, v3 max, f32 dist) {
 	return (max - min) * dist + min;
 }
 
@@ -138,17 +138,17 @@ std::ostream& operator<<(std::ostream& out, const v3 r) {
 void seed_rand() {
 	rand_gen.seed(rd());
 }
-f32 randf_cpp() {
+inline f32 randf_cpp() {
 	return dis(rand_gen);
 }
-v3 random_leunit() {
+inline v3 random_leunit() {
 	v3 v;
 	do {
 		v = 2.0f * v3(randf_cpp(),randf_cpp(),randf_cpp()) - v3(1.0f);
 	} while(lensq(v) >= 1.0f);
 	return v;
 }
-v3 random_ledisk() {
+inline v3 random_ledisk() {
 	v3 v;
 	do {
 		v = 2.0f * v3(randf_cpp(),randf_cpp(),0.0f) - v3(1.0f,1.0f,0.0f);
