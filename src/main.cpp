@@ -8,7 +8,7 @@
 #include <iostream>
 
 #define USE_THREADING
-#define LANE_WIDTH 4
+#define LANE_WIDTH 8
 
 #include "basic.h"
 #include "image.h"
@@ -76,7 +76,7 @@ int main(int, char**) {
 
 	ImGui::GetStyle().WindowRounding = 0.0f;
 
-	i32 size[3] = {640,480,4};
+	i32 size[3] = {640,480,8};
 	u64 time = 0, start = 0;
 	std::string file = "output.png";
 	file.resize(100);
@@ -85,7 +85,7 @@ int main(int, char**) {
 	scene s;
 	image result;
 
-	s.init(size[0],size[1],size[2]);
+	s.init(size[0],size[1],size[2]/LANE_WIDTH);
 	result.init(size[0], size[1]);
 
 	bool running = true;
@@ -129,7 +129,7 @@ int main(int, char**) {
 	    	s.destroy();
 	    	result.destroy();
 
-	    	s.init(size[0],size[1],size[2]);
+	    	s.init(size[0],size[1],size[2]/LANE_WIDTH);
 			result.init(size[0], size[1]);
 
 	    	start = result.begin_render(s);
