@@ -28,6 +28,7 @@ if host_system == 'windows'
 	
 	inc_dir = include_directories('deps/glad', 'deps/imgui', 'deps')
 	link += '../src/icon.res'
+	args += '-fp:fast'
 
 	sdl_dir = join_paths(project_dir, 'deps/SDL2/lib')
 	deps += cc.find_library('SDL2', dirs : sdl_dir)

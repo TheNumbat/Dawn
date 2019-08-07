@@ -1,5 +1,11 @@
 TODO:
 
 SIMD optimizations
+	look for places to cut off rays (masks are zero/one)
+	don't use ray_lanes!!! instead accelerate sphere testing and such
+	https://bitshifter.github.io/2018/06/04/simd-path-tracing/
+	http://aras-p.info/blog/2018/04/10/Daily-Pathtracer-Part-7-Initial-SIMD/
+	http://aras-p.info/blog/2018/04/13/Daily-Pathtracer-9-A-wild-ryg-appears/
+
 raytracing the next week
 start PBRT book
