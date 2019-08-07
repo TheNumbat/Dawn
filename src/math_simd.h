@@ -15,7 +15,7 @@
 
 union f32_lane {
 	__m256 v;
-	f32 f[LANE_WIDTH];
+	f32 f[LANE_WIDTH] = {};
 
 	void operator+=(f32_lane x) {v = _mm256_add_ps(v, x.v);}
 	void operator-=(f32_lane x) {v = _mm256_sub_ps(v, x.v);}
@@ -143,6 +143,24 @@ v3_lane operator+(f32 _l, v3_lane r) {
 	 _mm256_add_ps(l, r.y),
 	 _mm256_add_ps(l, r.z)};
 }
+v3_lane operator+(v3_lane l, v3 r) {
+	__m256 x = _mm256_set1_ps(r.x);
+	__m256 y = _mm256_set1_ps(r.y);
+	__m256 z = _mm256_set1_ps(r.z);
+	return 
+	{_mm256_add_ps(l.x, x),
+	 _mm256_add_ps(l.y, y),
+	 _mm256_add_ps(l.z, z)};
+}
+v3_lane operator+(v3 l, v3_lane r) {
+	__m256 x = _mm256_set1_ps(l.x);
+	__m256 y = _mm256_set1_ps(l.y);
+	__m256 z = _mm256_set1_ps(l.z);
+	return 
+	{_mm256_add_ps(x, r.x),
+	 _mm256_add_ps(y, r.y),
+	 _mm256_add_ps(z, r.z)};
+}
 v3_lane operator-(v3_lane l, v3_lane r) {
 	return 
 	{_mm256_sub_ps(l.x, r.x),
@@ -163,6 +181,24 @@ v3_lane operator-(f32 _l, v3_lane r) {
 	 _mm256_sub_ps(l, r.y),
 	 _mm256_sub_ps(l, r.z)};
 }
+v3_lane operator-(v3_lane l, v3 r) {
+	__m256 x = _mm256_set1_ps(r.x);
+	__m256 y = _mm256_set1_ps(r.y);
+	__m256 z = _mm256_set1_ps(r.z);
+	return 
+	{_mm256_sub_ps(l.x, x),
+	 _mm256_sub_ps(l.y, y),
+	 _mm256_sub_ps(l.z, z)};
+}
+v3_lane operator-(v3 l, v3_lane r) {
+	__m256 x = _mm256_set1_ps(l.x);
+	__m256 y = _mm256_set1_ps(l.y);
+	__m256 z = _mm256_set1_ps(l.z);
+	return 
+	{_mm256_sub_ps(x, r.x),
+	 _mm256_sub_ps(y, r.y),
+	 _mm256_sub_ps(z, r.z)};
+}
 v3_lane operator*(v3_lane l, v3_lane r) {
 	return 
 	{_mm256_mul_ps(l.x, r.x),
@@ -175,6 +211,24 @@ v3_lane operator*(v3_lane l, f32 _r) {
 	{_mm256_mul_ps(l.x, r),
 	 _mm256_mul_ps(l.y, r),
 	 _mm256_mul_ps(l.z, r)};
+}
+v3_lane operator*(v3_lane l, v3 r) {
+	__m256 x = _mm256_set1_ps(r.x);
+	__m256 y = _mm256_set1_ps(r.y);
+	__m256 z = _mm256_set1_ps(r.z);
+	return 
+	{_mm256_mul_ps(l.x, x),
+	 _mm256_mul_ps(l.y, y),
+	 _mm256_mul_ps(l.z, z)};
+}
+v3_lane operator*(v3 l, v3_lane r) {
+	__m256 x = _mm256_set1_ps(l.x);
+	__m256 y = _mm256_set1_ps(l.y);
+	__m256 z = _mm256_set1_ps(l.z);
+	return 
+	{_mm256_mul_ps(x, r.x),
+	 _mm256_mul_ps(y, r.y),
+	 _mm256_mul_ps(z, r.z)};
 }
 v3_lane operator*(f32 _l, v3_lane r) {
 	__m256 l = _mm256_set1_ps(_l);
@@ -202,6 +256,24 @@ v3_lane operator/(f32 _l, v3_lane r) {
 	{_mm256_div_ps(l, r.x),
 	 _mm256_div_ps(l, r.y),
 	 _mm256_div_ps(l, r.z)};
+}
+v3_lane operator/(v3_lane l, v3 r) {
+	__m256 x = _mm256_set1_ps(r.x);
+	__m256 y = _mm256_set1_ps(r.y);
+	__m256 z = _mm256_set1_ps(r.z);
+	return 
+	{_mm256_div_ps(l.x, x),
+	 _mm256_div_ps(l.y, y),
+	 _mm256_div_ps(l.z, z)};
+}
+v3_lane operator/(v3 l, v3_lane r) {
+	__m256 x = _mm256_set1_ps(l.x);
+	__m256 y = _mm256_set1_ps(l.y);
+	__m256 z = _mm256_set1_ps(l.z);
+	return 
+	{_mm256_div_ps(x, r.x),
+	 _mm256_div_ps(y, r.y),
+	 _mm256_div_ps(z, r.z)};
 }
 
 f32_lane operator==(v3_lane l, v3_lane r) {

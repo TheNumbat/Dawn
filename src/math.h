@@ -32,7 +32,6 @@ union v3 {
 	void operator/=(f32 s) {x /= s; y /= s; z /= s;}
 	f32& operator[](i32 idx) {return a[idx];}
 	v3 operator-() {return {-x,-y,-z};}
-	operator bool() {return x || y || z;}
 
 	v3() {}
 	v3(f32 _x) {x = _x; y = _x; z = _x;}

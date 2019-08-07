@@ -44,7 +44,7 @@ struct camera {
 		vert_step = -2.0f*half_h*focus*up;
 	}
 
-	ray_lane get_rays(f32_lane u, f32_lane v, f32_lane jitx, f32_lane jity) {
+	ray_lane get_rays(f32 u, f32 v, f32_lane jitx, f32_lane jity) {
 		
 		jitx /= (f32)wid;
 		jity /= (f32)hei;
@@ -116,7 +116,7 @@ struct scene {
 		scatter_lane s = mats.get(t.mat)->bsdf(r, t);
 
 		f32_lane hit_mask = t.hit;
-		f32_lane absorb_mask = ~s.absorbed;
+		f32_lane absorb_mask = ~(hit_mask & s.absorbed);
 
 		v3_lane colors = s.attenuation * compute(s.out, depth+1);
 
@@ -129,7 +129,7 @@ struct scene {
 		result |= (sky & (~hit_mask) & absorb_mask);
 		return result;
 	}
-	v3 pixel(f32_lane u, f32_lane v) {
+	v3 pixel(f32 u, f32 v) {
 		v3_lane result_lane;
 		for(i32 s = 0; s < samples; s++) {
 			f32_lane jitx = randf_lane(), jity = randf_lane();

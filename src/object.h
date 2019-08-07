@@ -48,15 +48,16 @@ struct sphere {
 		
 		f32_lane result, mask;
 		{ // d > 0.0f
-			f32_lane t_mask = pos_mask & (result <= tmax) & (result >= tmin);
-			
-			result |= t_mask & ((-b - sqd) / a2);
+			f32_lane temp = ((-b - sqd) / a2);
+			f32_lane t_mask = pos_mask & (temp <= tmax) & (temp >= tmin);
+			result |= t_mask & temp;
 			mask   |= t_mask;
 		}
 		{
-			f32_lane t_mask = neg_mask & (result <= tmax) & (result >= tmin);	
+			f32_lane temp = ((-b + sqd) / a2);
+			f32_lane t_mask = neg_mask & (temp <= tmax) & (temp >= tmin);	
 			
-			result |= t_mask & ((-b + sqd) / a2);
+			result |= t_mask & temp;
 			mask   |= t_mask;
 		}
 
