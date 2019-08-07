@@ -10,7 +10,7 @@ struct trace_lane {
 	v3_lane pos, normal;
 	f32_lane mat;
 
-	void take_on(trace_lane o) {
+	void take_on(trace_lane& o) {
 		hit |= o.hit;
 		
 		t   &= ~o.hit;
@@ -30,13 +30,13 @@ struct sphere {
 	v3 pos;
 	f32 rad = 0.0f;
 
-	trace_lane hit(ray_lane& r, f32_lane tmin, f32_lane tmax) {
+	trace_lane hit(const ray_lane& r, const f32_lane& tmin, const f32_lane& tmax) const {
 		
 		trace_lane ret;
 		v3_lane rel_pos = r.pos - pos;
 
 		f32_lane a = lensq(r.dir);
-		f32_lane b = 2.0f * dot(rel_pos, r.dir);
+		f32_lane b = f32_lane{2.0f} * dot(rel_pos, r.dir);
 		f32_lane c = lensq(rel_pos) - rad*rad;
 		f32_lane d = b*b - 4*a*c;
 		
@@ -88,7 +88,7 @@ struct object {
 		ret.s = {pos,rad};
 		return ret;
 	}
-	trace_lane hit(ray_lane& r, f32_lane tmin, f32_lane tmax) {
+	trace_lane hit(const ray_lane& r, const f32_lane& tmin, const f32_lane& tmax) const {
 		trace_lane ret;
 		switch(type) {
 		case obj::sphere: ret = s.hit(r,tmin,tmax); break;
@@ -109,12 +109,12 @@ struct object_list {
 
 	void destroy() {objects.clear();}
 	~object_list() {destroy();}
-	trace_lane hit(ray_lane r, f32_lane tmin, f32_lane tmax) {
+	trace_lane hit(const ray_lane& r, const f32_lane& tmin, const f32_lane& tmax) const {
 		
 		trace_lane ret;
 		f32_lane closest = tmax;
 
-		for(object& o : objects) {
+		for(const object& o : objects) {
 
 			trace_lane next = o.hit(r,tmin,closest);
 			

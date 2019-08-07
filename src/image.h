@@ -11,7 +11,7 @@
 
 struct thread_data {
 	u32* data = null;
-	scene* s = null;
+	scene const* s = null;
 	i32 x,y,w,h;
 	i32 total_w, total_h;
 };
@@ -48,7 +48,7 @@ struct image {
 	i32 total_tasks = 0;
 	ThreadPool pool;
 
-	u64 begin_render(scene& s) {
+	u64 begin_render(const scene& s) {
 
 		u64 start = SDL_GetPerformanceCounter();
 

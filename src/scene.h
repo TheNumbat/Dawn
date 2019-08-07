@@ -44,10 +44,10 @@ struct camera {
 		vert_step = -2.0f*half_h*focus*up;
 	}
 
-	ray_lane get_rays(f32 u, f32 v, f32_lane jitx, f32_lane jity) {
+	ray_lane get_rays(f32 u, f32 v, const f32_lane& _jitx, const f32_lane& _jity) const {
 		
-		jitx /= (f32)wid;
-		jity /= (f32)hei;
+		f32_lane jitx = _jitx / (f32)wid;
+		f32_lane jity = _jity / (f32)hei;
 		jitx += u; jity += v;
 
 		v3_lane lens_pos = aperture * random_ledisk_lane();
@@ -108,13 +108,13 @@ struct scene {
 	}
 	~scene() {destroy();}
 
-	v3_lane compute(ray_lane r, i32 depth = 0) {
+	v3_lane compute(const ray_lane& r, i32 depth = 0) const {
 
 		if(depth >= max_depth) {
 			return f32_lane{};
 		}
 
-		trace_lane t = list.hit(r, 0.001f, FLT_MAX);
+		trace_lane t = list.hit(r, f32_lane{0.001f}, f32_lane{FLT_MAX});
 
 		i32 found = 0;
 		i32 unique[LANE_WIDTH] = {};
@@ -153,7 +153,7 @@ struct scene {
 
 		return result;
 	}
-	v3 pixel(f32 u, f32 v) {
+	v3 pixel(f32 u, f32 v) const {
 		v3_lane result_lane;
 		for(i32 s = 0; s < samples; s++) {
 			f32_lane jitx = randf_lane(), jity = randf_lane();

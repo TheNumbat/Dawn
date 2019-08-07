@@ -20,7 +20,7 @@ struct scatter_lane {
 struct lambertian {
 	v3 albedo;
 
-	scatter_lane bsdf(ray_lane&, trace_lane& surface) {
+	scatter_lane bsdf(const ray_lane&, const trace_lane& surface) const {
 		scatter_lane ret;
 		v3_lane out = surface.pos + surface.normal + random_leunit_lane();
 		ret.out = {surface.pos, out - surface.pos};
@@ -33,7 +33,7 @@ struct metal {
 	v3 albedo;
 	f32 rough = 0.0f;
 
-	scatter_lane bsdf(ray_lane& incoming, trace_lane& surface) {
+	scatter_lane bsdf(const ray_lane& incoming, const trace_lane& surface) const {
 		scatter_lane ret;
 		v3_lane r = reflect(norm(incoming.dir),surface.normal);
 		ret.out = {surface.pos, r + rough * random_leunit_lane()};
@@ -51,7 +51,7 @@ struct dielectric {
 		f32_lane internal;
 		v3_lane out;
 	};
-	refract_ refract(v3_lane v, v3_lane n, f32_lane iout_iin) {
+	static refract_ refract(const v3_lane& v, const v3_lane& n, const f32_lane& iout_iin) {
 		refract_ ret;
 		v3_lane in = norm(v);
 		f32_lane ct = dot(in, n);
@@ -62,13 +62,13 @@ struct dielectric {
 		return ret;
 	}
 
-	f32_lane schlick(f32_lane cos) {
+	f32_lane schlick(const f32_lane& cos) const {
 		f32_lane r = (1.0f - index) / (1.0f + index);
 		r *= r;
 		return r + (1.0f - r) * pow(1.0f - cos, 5.0f);
 	}
 
-	scatter_lane bsdf(ray_lane& incoming, trace_lane& surface) {
+	scatter_lane bsdf(const ray_lane& incoming, const trace_lane& surface) const {
 		
 		scatter_lane ret;
 		v3_lane reflected = reflect(incoming.dir,surface.normal);
@@ -133,7 +133,7 @@ struct material {
 		ret.d = {index};
 		return ret;
 	}
-	scatter_lane bsdf(ray_lane& incoming, trace_lane& surface) {
+	scatter_lane bsdf(const ray_lane& incoming, const trace_lane& surface) const {
 		switch(type) {
 		case mat::lambertian: return l.bsdf(incoming,surface);
 		case mat::metal: return m.bsdf(incoming,surface);
@@ -168,7 +168,7 @@ struct materal_cache {
 		return next_id++;
 	}
 	// NOTE(max): unstable when mats grows!!
-	material* get(mat_id id) {
+	const material* get(mat_id id) const {
 		return &mats[id];
 	}
 
