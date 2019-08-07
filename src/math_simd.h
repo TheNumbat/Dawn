@@ -18,6 +18,7 @@
 #define __xor_ps _mm256_xor_ps
 #define __pow_ps _mm256_pow_ps
 #define __hadd_ps _mm256_hadd_ps
+#include <immintrin.h>
 #elif LANE_WIDTH==4
 #define __lane __m128
 #define __add_ps _mm_add_ps
@@ -35,6 +36,7 @@
 #define __xor_ps _mm_xor_ps
 #define __pow_ps _mm_pow_ps
 #define __hadd_ps _mm_hadd_ps
+#include <xmmintrin.h>
 #else
 #error "LANE_WIDTH not 4 or 8"
 #endif
@@ -42,7 +44,6 @@
 #include "basic.h"
 
 #include <math.h>
-#include <immintrin.h>
 #include <random>
 
 #ifdef _MSC_VER
@@ -528,12 +529,12 @@ v3_lane lerp(const v3_lane& min, const v3_lane& max, const f32_lane& dist) {
 }
 
 v3_lane cross(const v3_lane& l, const v3_lane& r) {
-	return {__mul_ps(l.y,r.z) -
-			__mul_ps(l.z,r.y), 
-			__mul_ps(l.z,r.x) - 
-			__mul_ps(l.x,r.z), 
-			__mul_ps(l.x,r.y) - 
-			__mul_ps(l.y,r.x)};
+	return {f32_lane{__mul_ps(l.y,r.z)} -
+			f32_lane{__mul_ps(l.z,r.y)}, 
+			f32_lane{__mul_ps(l.z,r.x)} - 
+			f32_lane{__mul_ps(l.x,r.z)}, 
+			f32_lane{__mul_ps(l.x,r.y)} - 
+			f32_lane{__mul_ps(l.y,r.x)}};
 }
 
 struct ray_lane {

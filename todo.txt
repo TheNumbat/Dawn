@@ -8,6 +8,7 @@ SIMD optimizations
 raytracing the next week
 start PBRT book
 
-Performance:
-	Scalar: 640x480x128 - 107s
+Performance: 640x480x128
+	Base Scalar: 107s
+	SIMD v3: 81.5s
 
