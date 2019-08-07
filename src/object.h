@@ -5,12 +5,12 @@
 
 #include <vector>
 
-struct material;
+typedef i32 mat_id;
 struct trace {
 	bool hit = false;
 	f32 t = 0.0f;
 	v3 pos, normal;
-	material* mat = null;
+	mat_id mat = 0;
 };
 
 struct sphere {
@@ -54,11 +54,11 @@ enum class obj : u8 {
 
 struct object {
 	obj type = obj::none;
-	material* mat = null;
+	mat_id mat = 0;
 	union {
 		sphere s;
 	};
-	static object sphere(material* mat, v3 pos, f32 rad) {
+	static object sphere(mat_id mat, v3 pos, f32 rad) {
 		object ret;
 		ret.mat = mat;
 		ret.type = obj::sphere;
@@ -83,7 +83,6 @@ struct object {
 };
 
 struct object_list {
-	std::vector<object> objects;
 
 	void destroy() {objects.clear();}
 	~object_list() {destroy();}
@@ -100,4 +99,7 @@ struct object_list {
 		return ret;
 	}
 	void push(object o) {objects.push_back(o);}
+	
+private:
+	std::vector<object> objects;
 };

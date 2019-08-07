@@ -147,3 +147,30 @@ struct material {
 	void operator=(const material&& o) {memcpy(this,&o,sizeof(material));}
 	material() {}
 };
+
+typedef i32 mat_id;
+
+struct materal_cache {
+	
+	materal_cache() {clear();}
+	void clear() {
+		mats.clear(); 
+		add(material::lambertian(v3(1.0f,0.0f,0.0f)));
+		next_id = 1;
+	}
+	void destroy() {next_id = 1;}
+	~materal_cache() {destroy();}
+
+	mat_id add(material m) {
+		mats.push_back(m);
+		return next_id++;
+	}
+	// NOTE(max): unstable when mats grows!!
+	material* get(mat_id id) {
+		return &mats[id];
+	}
+
+private:
+	std::vector<material> mats;
+	mat_id next_id = 0;
+};

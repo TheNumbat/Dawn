@@ -4,7 +4,9 @@
 #define LANE_WIDTH 8
 
 #include "basic.h"
+
 #include <math.h>
+#include <immintrin.h>
 #include <random>
 
 #ifdef _MSC_VER
@@ -37,6 +39,7 @@ union f32_lane {
 	f32_lane operator=(const f32_lane& o) {memcpy(this,&o,sizeof(f32_lane)); return *this;}
 	f32_lane operator=(const f32_lane&& o) {memcpy(this,&o,sizeof(f32_lane)); return *this;}
 };
+static_assert(sizeof(f32_lane) == 4 * 8, "sizeof(f32_lane) != 32");
 
 union v3_lane {
 	struct {
@@ -246,18 +249,32 @@ f32_lane operator/(f32 _l, f32_lane r) {
 	return {_mm256_div_ps(l, r.v)};
 }
 
-bool operator==(f32_lane l, f32_lane r) {
-	i32 cmp = _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_EQ_OQ));
-	return cmp == 0xff;
+i32 operator==(f32_lane l, f32_lane r) {
+	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_EQ_OQ));
 }
-bool operator!=(f32_lane l, f32_lane r) {
-	i32 cmp = _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_NEQ_OQ));
-	return cmp != 0;
+i32 operator!=(f32_lane l, f32_lane r) {
+	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_NEQ_OQ));
+}
+
+i32 operator>(f32_lane l, f32_lane r) {
+	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_GT_OS));
+}
+i32 operator<(f32_lane l, f32_lane r) {
+	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_LT_OS));
+}
+i32 operator>=(f32_lane l, f32_lane r) {
+	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_GE_OS));
+}
+i32 operator<=(f32_lane l, f32_lane r) {
+	return _mm256_movemask_ps(_mm256_cmp_ps(l.v,r.v,_CMP_LE_OS));
 }
 
 f32_lane pow(f32_lane l, f32 _r) {
 	__m256 r = _mm256_set1_ps(_r);
 	return {_mm256_pow_ps(l.v,r)};
+}
+f32_lane sqrt(f32_lane l) {
+	return {_mm256_sqrt_ps(l.v)};
 }
 
 std::ostream& operator<<(std::ostream& out, v3_lane r) {

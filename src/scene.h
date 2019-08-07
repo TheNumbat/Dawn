@@ -62,22 +62,21 @@ struct scene {
 	camera cam;
 	i32 samples = 1, max_depth = 5;
 
-	material lamb0, lamb1, met0, dia0;
-	std::vector<material> mats;
+	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
+	materal_cache mats;
 
 	scene() {}
 	void init(i32 w, i32 h, i32 s) {
 		samples = s;
 		cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f);
 
-		lamb0 = material::lambertian(v3(0.5f));
-		lamb1 = material::lambertian(v3(0.4f,0.2f,0.1f));
-		met0 = material::metal(v3(0.7f,0.6f,0.5f), 0.0f);
-		dia0 = material::dielectric(1.5f);
 		mats.clear();
-		mats.resize(500);
+		lamb0 = mats.add(material::lambertian(v3(0.5f)));
+		lamb1 = mats.add(material::lambertian(v3(0.4f,0.2f,0.1f)));
+		met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
+		dia0 = mats.add(material::dielectric(1.5f));
 
-		list.push(object::sphere(&lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
+		list.push(object::sphere(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
 		for (i32 a = -11; a < 11; a++) {
 			for (i32 b = -11; b < 11; b++) {
 				f32 choose_mat = randf_cpp();
@@ -85,21 +84,21 @@ struct scene {
 
 				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
 					if (choose_mat < 0.8f) {
-						mats.push_back(material::lambertian(v3(randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp())));
-						list.push(object::sphere(&mats.back(), center, 0.2f));
+						mat_id id = mats.add(material::lambertian(v3(randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp())));
+						list.push(object::sphere(id, center, 0.2f));
 					} else if (choose_mat < 0.95) {
-						mats.push_back(material::metal(v3(0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp())), 0.5f*randf_cpp()));
-						list.push(object::sphere(&mats.back(), center, 0.2f));
+						mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp())), 0.5f*randf_cpp()));
+						list.push(object::sphere(id, center, 0.2f));
 					} else {
-						list.push(object::sphere(&dia0, center, 0.2f));
+						list.push(object::sphere(dia0, center, 0.2f));
 					}
 				}
 			}
 		}
 
-		list.push(object::sphere(&dia0, v3(0, 1, 0), 1.0));
-		list.push(object::sphere(&lamb1, v3(-4, 1, 0), 1.0));
-		list.push(object::sphere(&met0, v3(4, 1, 0), 1.0));
+		list.push(object::sphere(dia0, v3(0, 1, 0), 1.0));
+		list.push(object::sphere(lamb1, v3(-4, 1, 0), 1.0));
+		list.push(object::sphere(met0, v3(4, 1, 0), 1.0));
 	}
 	void destroy() {
 		cam = {};
@@ -114,7 +113,7 @@ struct scene {
 		if(t.hit) {
 			if(depth >= max_depth) return v3();
 
-			scatter s = t.mat->bsdf(r, t);
+			scatter s = mats.get(t.mat)->bsdf(r, t);
 
 			if(s.absorbed) return v3();
 
