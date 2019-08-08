@@ -1,9 +1,9 @@
 
 #include <SDL2/SDL.h>
-#include <glad/glad.h>
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_sdl.h>
-#include <imgui/imgui_impl_opengl3.h>
+#include <glad.h>
+#include <imgui.h>
+#include <imgui_impl_sdl.h>
+#include <imgui_impl_opengl3.h>
 
 #include <iostream>
 

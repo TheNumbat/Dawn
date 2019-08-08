@@ -16,7 +16,6 @@
 #define __cmp_ps _mm256_cmp_ps
 #define __set1_epi32 _mm256_set1_epi32
 #define __xor_ps _mm256_xor_ps
-#define __pow_ps _mm256_pow_ps
 #define __hadd_ps _mm256_hadd_ps
 #define __blendv_ps _mm256_blendv_ps
 #define __movemask_ps _mm256_movemask_ps
@@ -40,7 +39,6 @@
 #define __cmp_ps _mm_cmp_ps
 #define __set1_epi32 _mm_set1_epi32
 #define __xor_ps _mm_xor_ps
-#define __pow_ps _mm_pow_ps
 #define __hadd_ps _mm_hadd_ps
 #define __blendv_ps _mm_blendv_ps
 #define __movemask_ps _mm_movemask_ps
@@ -346,13 +344,6 @@ inline f32_lane VEC operator!=(const v3_lane& l, const v3_lane& r) {
 	return __or_ps(__or_ps(cmpx,cmpy),cmpz);
 }
 
-inline v3_lane VEC pow(const v3_lane& v, const f32 _r) {
-	__lane r = __set1_ps(_r);
-	return {__pow_ps(v.x,r),
-			__pow_ps(v.y,r),
-			__pow_ps(v.z,r)};
-}
-
 inline bool VEC none(const f32_lane& v) {
 	return __movemask_ps(v.v) == 0x0;
 }
@@ -364,7 +355,7 @@ inline bool VEC any(const f32_lane& v) {
 }
 
 // NOTE(max): mask 1: left 0: right
-f32_lane select(const f32_lane& l, const f32_lane& r, const f32_lane& m) {
+inline f32_lane select(const f32_lane& l, const f32_lane& r, const f32_lane& m) {
 	return {__blendv_ps(r.v,l.v,m.v)};
 }
 
@@ -496,10 +487,6 @@ inline f32_lane VEC operator<=(f32 l, const f32_lane& r) {
 	return __cmp_ps(__set1_ps(l),r.v,_CMP_LE_OS);
 }
 
-inline f32_lane VEC pow(const f32_lane& l, const f32 _r) {
-	__lane r = __set1_ps(_r);
-	return {__pow_ps(l.v,r)};
-}
 inline f32_lane VEC sqrt(const f32_lane& l) {
 	return {__sqrt_ps(l.v)};
 }
@@ -648,10 +635,6 @@ void test_simd() {
 		std::cout << "neq: " << (_0 != _0) << std::endl;
 		std::cout << "neq: " << (_0 != _1) << std::endl;
 		std::cout << "neq: " << (_1 != _0) << std::endl;
-		std::cout << "pow: " << pow(_1,0.0f) << std::endl;
-		std::cout << "pow: " << pow(_1,0.5f) << std::endl;
-		std::cout << "pow: " << pow(_1,1.0f) << std::endl;
-		std::cout << "pow: " << pow(_1,3.0f) << std::endl;
 
 		f32_lane _2;
 		_2.f[0] = -2.0f;
@@ -690,10 +673,6 @@ void test_simd() {
 		std::cout << "neq: " << (_0 != _0) << std::endl;
 		std::cout << "neq: " << (_0 != _1) << std::endl;
 		std::cout << "neq: " << (_1 != _0) << std::endl;
-		std::cout << "pow: " << pow(_0,0.0f) << std::endl;
-		std::cout << "pow: " << pow(_0,0.5f) << std::endl;
-		std::cout << "pow: " << pow(_0,1.0f) << std::endl;
-		std::cout << "pow: " << pow(_0,3.0f) << std::endl;
 		std::cout << "dot: " << dot(_0,_1) << std::endl;
 		std::cout << "cross: " << cross(_0,_1) << std::endl;
 		std::cout << "cross: " << cross(_1,_0) << std::endl;
