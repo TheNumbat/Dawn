@@ -1,11 +1,11 @@
 
-project('flow', 'cpp', default_options : ['cpp_std=c++17'])
+project('dawn', 'cpp', default_options : ['cpp_std=c++17'])
 
 cc 			= meson.get_compiler('cpp')
 host_system = host_machine.system()
 
 project_dir = meson.current_source_dir()
-inc_dir 	= include_directories('deps/glad', 'deps/imgui')
+inc_dir 	= include_directories('deps')
 
 if host_system == 'linux'
 	assert(cc.get_id() == 'clang', 'only clang++ supported on linux')
@@ -26,7 +26,6 @@ deps = []
 
 if host_system == 'windows'
 	
-	inc_dir = include_directories('deps/glad', 'deps/imgui', 'deps')
 	link += '../src/icon.res'
 	args += '-fp:fast'
 
