@@ -80,8 +80,7 @@ int main(int, char**) {
 	u64 time = 0, start = 0;
 	std::string file = "output.png";
 	file.resize(100);
-	
-	seed_rand();
+
 	scene s;
 	image result;
 

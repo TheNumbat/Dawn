@@ -2,24 +2,24 @@ TODO:
 
 SIMD optimizations
 	https://bitshifter.github.io/2018/06/04/simd-path-tracing/
-	http://aras-p.info/blog/2018/04/10/Daily-Pathtracer-Part-7-Initial-SIMD/
 	http://aras-p.info/blog/2018/04/13/Daily-Pathtracer-9-A-wild-ryg-appears/
 
 raytracing the next week
 start PBRT book
 
-fp:fast is causing NaN propagation
-
 Performance: 640x480x128 - Debug-Optimized Build
 	
-	Base Scalar : 107s		{48s Release}
-	SIMD v3     : 81.5s 	{29s Release}
-	Inlining    : 29s		{29s}
-	__vectorcall: 29s 		{29s}
-	SIMD Spheres: 13s
+	Base Scalar  : 107s		{48s Release}
+	SIMD v3      : 81.5s 	{29s Release}
+	Inlining     : 29s		{29s}
+	__vectorcall : 29s 		{29s}
+	SIMD Spheres : 13s
+	XorShift Rand: 11s 
 
 Optimizations To-Do:
 	General:
+		don't calculate position + normal for each nearer object, instead store object ID
+		  and calculate after we have found the nearest object.
 		looking into ray_lane again (didn't work first time, too divergent?? could have been buggy)
 	math_simd.h:
 		compare with and without const refs

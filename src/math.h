@@ -14,10 +14,6 @@
 #define VEC
 #endif
 
-std::random_device rd;
-std::mt19937 rand_gen;
-std::uniform_real_distribution<f32> dis;
-
 #define PI32 3.14159265358979323846264338327950288f
 #define RADIANS(v) (v * (PI32 / 180.0f)) 
 #define DEGREES(v) (v * (180.0f / PI32)) 
@@ -145,11 +141,25 @@ v3 safe(const v3 v) {
 	return (isnan(v.x) || isnan(v.y) || isnan(v.z)) ? v3{} : v;
 }
 
-void seed_rand() {
-	rand_gen.seed(rd());
+struct rand_state {
+	u32 x = 123456789;
+	u32 y = 362436069;
+	u32 z = 521288629;
+};
+static rand_state __state;
+inline u32 randu() {
+	u32 t;
+	__state.x ^= __state.x << 16;
+	__state.x ^= __state.x >> 5;
+	__state.x ^= __state.x << 1;
+	t = __state.x;
+	__state.x = __state.y;
+	__state.y = __state.z;
+	__state.z = t ^ __state.x ^ __state.y;
+	return __state.z;
 }
 inline f32 randf_cpp() {
-	return dis(rand_gen);
+	return (f32)randu() / UINT32_MAX;
 }
 inline v3 random_leunit() {
 	v3 v;

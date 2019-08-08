@@ -76,8 +76,8 @@ struct sphere_lane {
 
 		f32_lane pos_t = (-b - sqd) / (2.0f * a);
 		f32_lane neg_t = (-b + sqd) / (2.0f * a);
-		f32_lane pos_t_mask = pos_mask & (pos_t <= tmax) & (pos_t >= tmin);
-		f32_lane neg_t_mask = pos_mask & (neg_t <= tmax) & (neg_t >= tmin);
+		f32_lane pos_t_mask = (pos_t <= tmax) & (pos_t >= tmin);
+		f32_lane neg_t_mask = (neg_t <= tmax) & (neg_t >= tmin);
 		
 		f32_lane hit_mask = pos_t_mask | neg_t_mask;
 
