@@ -64,7 +64,7 @@ private:
 
 struct scene {
 
-	object_list list;
+	object scene_obj;
 	camera cam;
 	i32 samples = 1, max_depth = 8;
 
@@ -72,32 +72,6 @@ struct scene {
 	materal_cache mats;
 
 	scene() {}
-
-	void random_scene() {
-		sphere_lane_builder builder;
-
-		for (i32 a = -11; a < 11; a++) {
-			for (i32 b = -11; b < 11; b++) {
-				f32 choose_mat = randomf();
-				v3 center(a+0.9f*randomf(),0.2f,b+0.9f*randomf()); 
-
-				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
-					if (choose_mat < 0.8f) {
-						mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
-						builder.push(id, center, 0.2f);
-					} else if (choose_mat < 0.95) {
-						mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
-						builder.push(id, center, 0.2f);
-					} else {
-						builder.push(dia0, center, 0.2f);
-					}
-				}
-
-				if(builder.done()) list.push(builder.finish());
-			}
-		}
-		if(builder.not_empty()) list.push(builder.finish());
-	}
 
 	void init(i32 w, i32 h, i32 s) {
 		samples = s;
@@ -109,20 +83,12 @@ struct scene {
 		met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
 		dia0 = mats.add(material::dielectric(1.5f));
 
-		sphere_lane_builder builder;
-
-		builder.push(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f);
-		builder.push(dia0, v3(0.0f, 1.0f, 0.0f), 1.0);
-		builder.push(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0);
-		builder.push(met0, v3(4.0f, 1.0f, 0.0f), 1.0);
-
-		if(builder.not_empty()) list.push(builder.finish());
-
-		list.push(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
+		scene_obj = simple_scene();
 	}
+
 	void destroy() {
 		cam = {};
-		list.destroy();
+		scene_obj.destroy();
 		mats.clear();
 		samples = 1;
 	}
@@ -130,7 +96,7 @@ struct scene {
 
 	v3 compute(const ray& r, i32 depth = 0) const {
 		
-		trace t = list.hit(r, 0.001f, FLT_MAX);
+		trace t = scene_obj.hit(r, 0.001f, FLT_MAX);
 		if(t.hit) {
 			if(depth >= max_depth) return v3();
 
@@ -156,5 +122,53 @@ struct scene {
 		}
 		result /= (f32)samples;
 		return pow(result, 1.0f / 2.2f);
+	}
+
+
+	object random_scene() {
+		
+		std::vector<object> objs;
+		sphere_lane_builder builder;
+
+		for (i32 a = -11; a < 11; a++) {
+			for (i32 b = -11; b < 11; b++) {
+				f32 choose_mat = randomf();
+				v3 center(a+0.9f*randomf(),0.2f,b+0.9f*randomf()); 
+
+				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
+					if (choose_mat < 0.8f) {
+						mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
+						builder.push(id, center, 0.2f);
+					} else if (choose_mat < 0.95) {
+						mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
+						builder.push(id, center, 0.2f);
+					} else {
+						builder.push(dia0, center, 0.2f);
+					}
+				}
+
+				if(builder.done()) objs.push_back(builder.finish());
+			}
+		}
+		if(builder.not_empty()) objs.push_back(builder.finish());
+
+		return object::list(objs);
+	}
+
+	object simple_scene() {
+
+		std::vector<object> objs;
+		sphere_lane_builder builder;
+
+		builder.push(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f);
+		builder.push(dia0, v3(0.0f, 1.0f, 0.0f), 1.0);
+		builder.push(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0);
+		builder.push(met0, v3(4.0f, 1.0f, 0.0f), 1.0);
+
+		if(builder.not_empty()) objs.push_back(builder.finish());
+
+		objs.push_back(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
+
+		return object::list(objs);
 	}
 };

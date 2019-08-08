@@ -8,7 +8,6 @@
 #include <iostream>
 
 #define USE_THREADING
-#define LANE_WIDTH 8
 
 #include "basic.h"
 #include "image.h"

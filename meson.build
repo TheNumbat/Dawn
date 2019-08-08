@@ -18,6 +18,12 @@ sources = [
 	'deps/imgui/imgui_impl_sdl.cpp',
 	'deps/imgui/imgui_impl_opengl3.cpp',
 	'deps/glad/glad.cpp',
+	'src/object.cpp',
+	'src/image.cpp',
+	'src/stb.cpp',
+	'src/math.cpp',
+	'src/thread_pool.cpp',
+	'src/material.cpp',
 	'src/main.cpp']
 
 link = []

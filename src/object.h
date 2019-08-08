@@ -12,45 +12,22 @@ struct trace {
 	v3 pos, normal;
 };
 
+struct aabb {
+
+	v3 min, max;
+
+	static aabb enclose(const aabb& l, const aabb& r);
+	bool hit(const ray& incoming, f32 tmin, f32 tmax) const;
+};
+
 struct sphere {
 
 	v3 pos;
 	f32 rad = 0.0f;
 	i32 mat = 0;
 
-	trace hit(const ray& r, f32 tmin, f32 tmax) const {
-		
-		trace ret;
-		v3 rel_pos = r.pos - pos;
-		f32 a = lensq(r.dir);
-		f32 b = 2.0f * dot(rel_pos, r.dir);
-		f32 c = lensq(rel_pos) - rad*rad;
-		f32 d = b*b - 4*a*c;
-
-		if(d <= 0.0f) return ret;
-
-		f32 sqd = sqrtf(d);
-
-		f32 result = (-b - sqd) / (2.0f * a);
-		if(result <= tmax && result >= tmin) {
-			ret.hit = true;
-			ret.mat = mat;
-			ret.t = result;
-			ret.pos = r.get(result);
-			ret.normal = (ret.pos - pos) / rad;
-			return ret;
-		} 
-		
-		result = (-b + sqd) / (2.0f * a);
-		if(result <= tmax && result >= tmin) {
-			ret.hit = true;
-			ret.mat = mat;
-			ret.t = result;
-			ret.pos = r.get(result);
-			ret.normal = (ret.pos - pos) / rad;
-		}
-		return ret;
-	}
+	aabb box(f32, f32) const;
+	trace hit(const ray& r, f32 tmin, f32 tmax) const;
 };
 
 struct sphere_moving {
@@ -60,12 +37,8 @@ struct sphere_moving {
 	i32 mat = 0;
 	f32 start = 0.0f, duration = 0.0f;
 
-	trace hit(const ray& r, f32 tmin, f32 tmax) const {
-
-		v3 pos = lerp(pos0, pos1, (r.t - start) / duration);
-		sphere s{pos, rad, mat};
-		return s.hit(r, tmin, tmax);
-	}	
+	aabb box(f32 t0, f32 t1) const;
+	trace hit(const ray& r, f32 tmin, f32 tmax) const;
 };
 
 struct sphere_lane {
@@ -74,66 +47,43 @@ struct sphere_lane {
 	f32_lane rad;
 	f32_lane mat;
 
-	trace hit(const ray& r, f32 tmin, f32 tmax) const {
-		
-		trace ret;
-		
-		v3_lane rel_pos = r.pos - pos;
-		f32_lane a = lensq(r.dir);
-		f32_lane b = 2.0f * dot(rel_pos, r.dir);
-		f32_lane c = lensq(rel_pos) - rad*rad;
-		f32_lane d = b*b - 4.0f*a*c;
-
-		f32_lane pos_mask = d > 0.0f;
-		if(none(pos_mask)) return ret;
-
-		f32_lane sqd = sqrt(d);
-
-		f32_lane pos_t = (-b - sqd) / (2.0f * a);
-		f32_lane neg_t = (-b + sqd) / (2.0f * a);
-		f32_lane pos_t_mask = (pos_t <= tmax) & (pos_t >= tmin);
-		f32_lane neg_t_mask = (neg_t <= tmax) & (neg_t >= tmin);
-		
-		f32_lane hit_mask = pos_t_mask | neg_t_mask;
-
-		if(none(hit_mask)) return ret;
-
-		f32_lane t_max{tmax};
-		f32_lane t = min(select(pos_t,t_max,pos_t_mask), select(neg_t,t_max,neg_t_mask));
-
-		ret.hit = true;
-		ret.t = hmin(t);
-		ret.pos = r.get(ret.t);
-
-		// TODO(max): any way to not do that?
-		i32 idx = 0;
-		for(i32 i = 0; i < LANE_WIDTH; i++) {
-			if(t.f[i] == ret.t) {
-				idx = i;
-				break;
-			}
-		}
-		ret.normal = (ret.pos - pos[idx]) / rad.f[idx];
-		ret.mat = mat.i[idx];
-
-		return ret;
-	}
+	aabb box(f32, f32) const;
+	trace hit(const ray& r, f32 tmin, f32 tmax) const;
 };
 
 enum class obj : u8 {
 	none,
+	list,
 	sphere,
 	sphere_moving,
 	sphere_lane
 };
 
+struct object;
+struct object_list {
+
+	std::vector<object> objects;
+
+	void destroy();
+
+	aabb box(f32 t0, f32 t1) const;
+	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+};
+
 struct object {
 	obj type = obj::none;
 	union {
+		object_list l;
 		sphere s;
 		sphere_moving sm;
 		sphere_lane sl;
 	};
+	static object list(const std::vector<object>& l) {
+		object ret;
+		ret.type = obj::list;
+		ret.l = {l};
+		return ret;
+	}
 	static object sphere(i32 mat, v3 pos, f32 rad) {
 		object ret;
 		ret.type = obj::sphere;
@@ -154,9 +104,20 @@ struct object {
 	}
 	trace hit(const ray& r, f32 tmin, f32 tmax) const {
 		switch(type) {
+		case obj::list: return l.hit(r,tmin,tmax);
 		case obj::sphere: return s.hit(r,tmin,tmax);
 		case obj::sphere_lane: return sl.hit(r,tmin,tmax);
 		case obj::sphere_moving: return sm.hit(r,tmin,tmax);
+		default: assert(false);
+		}
+		return {};
+	}
+	aabb box(f32 t0, f32 t1) const {
+		switch(type) {
+		case obj::list: return l.box(t0, t1);
+		case obj::sphere: return s.box(t0, t1);
+		case obj::sphere_lane: return sl.box(t0, t1);
+		case obj::sphere_moving: return sm.box(t0, t1);
 		default: assert(false);
 		}
 		return {};
@@ -167,6 +128,16 @@ struct object {
 	void operator=(const object& o) {memcpy(this,&o,sizeof(object));}
 	void operator=(const object&& o) {memcpy(this,&o,sizeof(object));}
 	object() {}
+	~object() { destroy(); }
+	void destroy() {
+		switch(type) {
+		case obj::list: l.destroy(); break;
+		case obj::sphere: break;
+		case obj::sphere_lane: break;
+		case obj::sphere_moving: break;
+		default: assert(false);
+		}
+	}
 };
 
 struct sphere_lane_builder {
@@ -175,50 +146,10 @@ struct sphere_lane_builder {
 	f32_lane rad, mat;
 	i32 idx = 0;
 
-	void clear() {
-		idx = 0;
-		rad = mat = {0.0f};
-		pos = v3{0.0f};
-	}
-	void push(i32 m, v3 p, f32 r) {
-		assert(idx < LANE_WIDTH);
-		pos.set(idx, p);
-		rad.f[idx] = r;
-		mat.i[idx] = m;
-		idx++;
-	}
-	bool done() {
-		return idx == LANE_WIDTH;
-	}
-	bool not_empty() {
-		return idx > 0;
-	}
-	object finish() {
-		object lane = object::sphere_lane(mat,pos,rad);
-		clear();
-		return lane;
-	}
+	void clear();
+	void push(i32 m, v3 p, f32 r);
+	bool done();
+	bool not_empty();
+	object finish();
 };
 
-struct object_list {
-
-	void destroy() {objects.clear();}
-	~object_list() {destroy();}
-	trace hit(const ray& r, f32 tmin, f32 tmax) const {
-		
-		trace ret;
-		f32 closest = tmax;		
-		for(const object& o : objects) {
-			trace next = o.hit(r,tmin,closest);
-			if(next.hit) {
-				ret = next;
-				closest = next.t;
-			}
-		}
-		return ret;
-	}
-	void push(object o) {objects.push_back(o);}
-	
-private:
-	std::vector<object> objects;
-};
