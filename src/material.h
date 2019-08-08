@@ -48,7 +48,7 @@ struct dielectric {
 	f32 index = 1.0f;
 
 	struct refract_ {
-		f32 internal;
+		f32 internal = true;
 		v3 out;
 	};
 	static refract_ refract(v3 v, v3 n, f32 iout_iin) {

@@ -8,8 +8,20 @@ SIMD optimizations
 raytracing the next week
 start PBRT book
 
+fp:fast is causing NaN propagation
+
 Performance: 640x480x128 - Debug-Optimized Build
 	
-	Base Scalar : 107s		{ Release}
+	Base Scalar : 107s		{48s Release}
 	SIMD v3     : 81.5s 	{29s Release}
-	Inlining    : 29s		{Helps in Debug-Optimized Build, SIMD v3|Release is the same}
+	Inlining    : 29s		{29s}
+	__vectorcall: 29s 		{29s}
+	SIMD Spheres: 13s
+
+Optimizations To-Do:
+	General:
+		looking into ray_lane again (didn't work first time, too divergent?? could have been buggy)
+	math_simd.h:
+		compare with and without const refs
+	math.h:
+

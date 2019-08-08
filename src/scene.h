@@ -60,7 +60,7 @@ struct scene {
 
 	object_list list;
 	camera cam;
-	i32 samples = 1, max_depth = 4;
+	i32 samples = 1, max_depth = 8;
 
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;
@@ -76,7 +76,9 @@ struct scene {
 		met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
 		dia0 = mats.add(material::dielectric(1.5f));
 
-		list.push(object::sphere(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
+		sphere_lane_builder builder;
+
+		builder.push(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f);
 		for (i32 a = -11; a < 11; a++) {
 			for (i32 b = -11; b < 11; b++) {
 				f32 choose_mat = randf_cpp();
@@ -85,20 +87,24 @@ struct scene {
 				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
 					if (choose_mat < 0.8f) {
 						mat_id id = mats.add(material::lambertian(v3(randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp())));
-						list.push(object::sphere(id, center, 0.2f));
+						builder.push(id, center, 0.2f);
 					} else if (choose_mat < 0.95) {
 						mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp())), 0.5f*randf_cpp()));
-						list.push(object::sphere(id, center, 0.2f));
+						builder.push(id, center, 0.2f);
 					} else {
-						list.push(object::sphere(dia0, center, 0.2f));
+						builder.push(dia0, center, 0.2f);
 					}
 				}
+
+				if(builder.done()) list.push(builder.finish());
 			}
 		}
 
-		list.push(object::sphere(dia0, v3(0, 1, 0), 1.0));
-		list.push(object::sphere(lamb1, v3(-4, 1, 0), 1.0));
-		list.push(object::sphere(met0, v3(4, 1, 0), 1.0));
+		builder.push(dia0, v3(0, 1, 0), 1.0);
+		builder.push(lamb1, v3(-4, 1, 0), 1.0);
+		builder.push(met0, v3(4, 1, 0), 1.0);
+
+		list.push(builder.finish());
 	}
 	void destroy() {
 		cam = {};
@@ -128,9 +134,11 @@ struct scene {
 	v3 pixel(f32 u, f32 v) const {
 		v3 result;
 		for(i32 s = 0; s < samples; s++) {
+			
 			f32 jitx = randf_cpp(), jity = randf_cpp();
 			ray r = cam.get_ray(u,v, jitx,jity);
-			result += compute(r);
+			
+			result += safe(compute(r));
 		}
 		result /= (f32)samples;
 		return pow(result, 1.0f / 2.2f);

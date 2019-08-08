@@ -39,7 +39,7 @@ elif host_system == 'linux'
 	
 	deps += dependency('sdl2')
 	link += ['-ldl', '-pthread']
-	args += ['-fdeclspec', '-msse4.1']
+	args += ['-fdeclspec', '-msse4.1', '-ffast-math']
 
 endif
 
