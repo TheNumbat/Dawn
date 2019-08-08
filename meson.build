@@ -20,8 +20,8 @@ sources = [
 	'deps/glad/glad.cpp',
 	'src/object.cpp',
 	'src/image.cpp',
-	'src/stb.cpp',
-	'src/math.cpp',
+	'src/scene.cpp',
+	'src/lib.cpp',
 	'src/thread_pool.cpp',
 	'src/material.cpp',
 	'src/main.cpp']

@@ -78,10 +78,10 @@ struct object {
 		sphere_moving sm;
 		sphere_lane sl;
 	};
-	static object list(const std::vector<object>& l) {
+	static object list(std::vector<object>& l) {
 		object ret;
 		ret.type = obj::list;
-		ret.l = {l};
+		ret.l = {std::move(l)};
 		return ret;
 	}
 	static object sphere(i32 mat, v3 pos, f32 rad) {
@@ -131,6 +131,7 @@ struct object {
 	~object() { destroy(); }
 	void destroy() {
 		switch(type) {
+		case obj::none: break;
 		case obj::list: l.destroy(); break;
 		case obj::sphere: break;
 		case obj::sphere_lane: break;
