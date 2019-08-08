@@ -20,10 +20,10 @@ struct scatter {
 struct lambertian {
 	v3 albedo;
 
-	scatter bsdf(const ray&, const trace& surface) const {
+	scatter bsdf(const ray& incoming, const trace& surface) const {
 		scatter ret;
 		v3 out = surface.pos + surface.normal + random_leunit();
-		ret.out = {surface.pos, out - surface.pos};
+		ret.out = {surface.pos, out - surface.pos, incoming.t};
 		ret.attenuation = albedo;
 		return ret;
 	}
@@ -36,7 +36,7 @@ struct metal {
 	scatter bsdf(const ray& incoming, const trace& surface) const {
 		scatter ret;
 		v3 r = reflect(norm(incoming.dir),surface.normal);
-		ret.out = {surface.pos, r + rough * random_leunit()};
+		ret.out = {surface.pos, r + rough * random_leunit(), incoming.t};
 		ret.absorbed = dot(r, surface.normal) <= 0.0f;
 		ret.attenuation = albedo;
 		return ret;
@@ -96,10 +96,10 @@ struct dielectric {
 			refract_prob = 1.0f;
 		}
 
-		if(randf_cpp() < refract_prob) {
-			ret.out = {surface.pos, reflected};
+		if(randomf() < refract_prob) {
+			ret.out = {surface.pos, reflected, incoming.t};
 		} else {
-			ret.out = {surface.pos, refracted.out};
+			ret.out = {surface.pos, refracted.out, incoming.t};
 		}
 		ret.attenuation = v3(1.0f);
 		return ret;

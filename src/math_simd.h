@@ -587,7 +587,7 @@ struct ray_lane {
 inline f32_lane randf_lane() {
 	f32_lane ret;
 	for(i32 i = 0; i < LANE_WIDTH; i++) {
-		f32 r = randf_cpp();
+		f32 r = randomf();
 		ret.f[i] = r;
 	}
 	return ret;

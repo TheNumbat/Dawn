@@ -53,6 +53,21 @@ struct sphere {
 	}
 };
 
+struct sphere_moving {
+
+	v3 pos0, pos1;
+	f32 rad = 0.0f;
+	i32 mat = 0;
+	f32 start = 0.0f, duration = 0.0f;
+
+	trace hit(const ray& r, f32 tmin, f32 tmax) const {
+
+		v3 pos = lerp(pos0, pos1, (r.t - start) / duration);
+		sphere s{pos, rad, mat};
+		return s.hit(r, tmin, tmax);
+	}	
+};
+
 struct sphere_lane {
 
 	v3_lane pos;
@@ -108,6 +123,7 @@ struct sphere_lane {
 enum class obj : u8 {
 	none,
 	sphere,
+	sphere_moving,
 	sphere_lane
 };
 
@@ -115,12 +131,19 @@ struct object {
 	obj type = obj::none;
 	union {
 		sphere s;
+		sphere_moving sm;
 		sphere_lane sl;
 	};
 	static object sphere(i32 mat, v3 pos, f32 rad) {
 		object ret;
 		ret.type = obj::sphere;
 		ret.s = {pos,rad,mat};
+		return ret;
+	}
+	static object sphere_moving(i32 mat, v3 pos0, v3 pos1, f32 rad, f32 t0, f32 t1) {
+		object ret;
+		ret.type = obj::sphere_moving;
+		ret.sm = {pos0,pos1,rad,mat,t0,t1-t0};
 		return ret;
 	}
 	static object sphere_lane(const f32_lane& mat, const v3_lane& pos, const f32_lane& rad) {
@@ -133,6 +156,7 @@ struct object {
 		switch(type) {
 		case obj::sphere: return s.hit(r,tmin,tmax);
 		case obj::sphere_lane: return sl.hit(r,tmin,tmax);
+		case obj::sphere_moving: return sm.hit(r,tmin,tmax);
 		default: assert(false);
 		}
 		return {};
@@ -165,6 +189,9 @@ struct sphere_lane_builder {
 	}
 	bool done() {
 		return idx == LANE_WIDTH;
+	}
+	bool not_empty() {
+		return idx > 0;
 	}
 	object finish() {
 		object lane = object::sphere_lane(mat,pos,rad);

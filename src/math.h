@@ -149,7 +149,7 @@ struct rand_state {
 	u32 z = 521288629;
 };
 static rand_state __state;
-inline u32 randu() {
+inline u32 randomu() {
 	u32 t;
 	__state.x ^= __state.x << 16;
 	__state.x ^= __state.x >> 5;
@@ -160,27 +160,28 @@ inline u32 randu() {
 	__state.z = t ^ __state.x ^ __state.y;
 	return __state.z;
 }
-inline f32 randf_cpp() {
-	return (f32)randu() / UINT32_MAX;
+inline f32 randomf() {
+	return (f32)randomu() / UINT32_MAX;
 }
 inline v3 random_leunit() {
 	v3 v;
 	do {
-		v = 2.0f * v3(randf_cpp(),randf_cpp(),randf_cpp()) - v3(1.0f);
+		v = 2.0f * v3(randomf(),randomf(),randomf()) - v3(1.0f);
 	} while(lensq(v) >= 1.0f);
 	return v;
 }
 inline v3 random_ledisk() {
 	v3 v;
 	do {
-		v = 2.0f * v3(randf_cpp(),randf_cpp(),0.0f) - v3(1.0f,1.0f,0.0f);
+		v = 2.0f * v3(randomf(),randomf(),0.0f) - v3(1.0f,1.0f,0.0f);
 	} while(lensq(v) >= 1.0f);
 	return v;	
 }
 
 struct ray {
 	v3 pos, dir;
-	v3 get(f32 t) const {return pos + t * dir;}
+	f32 t = 0.0f;
+	v3 get(f32 d) const {return pos + d * dir;}
 };
 
 

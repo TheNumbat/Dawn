@@ -8,14 +8,19 @@
 struct camera {
 
 	// params
-	f32 ar = 0.0f, fov = 0.0f, aperture = 0.0f;
-	i32 wid = 0, hei = 0;
 	v3 pos, look;
+	
+	f32 ar = 0.0f;
+	i32 wid = 0, hei = 0;
+	
+	f32 fov = 0.0f, aperture = 0.0f, start_time = 0.0f, duration = 0.0f;
 
-	void init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap) {
+	void init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 s, f32 d) {
 		wid = w;
 		hei = h;
 		pos = p;
+		start_time = s;
+		duration = d;
 		aperture = ap / 2.0f;
 		look = l;
 		fov = RADIANS(f);
@@ -46,9 +51,10 @@ struct camera {
 		jity /= (f32)hei;
 		u += jitx; v += jity;
 
+		f32 time = start_time + randomf() * duration;
 		v3 lens_pos = aperture * random_ledisk();
 		v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
-		return {offset, lower_left + u*horz_step + v*vert_step - offset};
+		return {offset, lower_left + u*horz_step + v*vert_step - offset, time};
 	}
 
 private:
@@ -66,9 +72,36 @@ struct scene {
 	materal_cache mats;
 
 	scene() {}
+
+	void random_scene() {
+		sphere_lane_builder builder;
+
+		for (i32 a = -11; a < 11; a++) {
+			for (i32 b = -11; b < 11; b++) {
+				f32 choose_mat = randomf();
+				v3 center(a+0.9f*randomf(),0.2f,b+0.9f*randomf()); 
+
+				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
+					if (choose_mat < 0.8f) {
+						mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
+						builder.push(id, center, 0.2f);
+					} else if (choose_mat < 0.95) {
+						mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
+						builder.push(id, center, 0.2f);
+					} else {
+						builder.push(dia0, center, 0.2f);
+					}
+				}
+
+				if(builder.done()) list.push(builder.finish());
+			}
+		}
+		if(builder.not_empty()) list.push(builder.finish());
+	}
+
 	void init(i32 w, i32 h, i32 s) {
 		samples = s;
-		cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f);
+		cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f, 0.0f, 1.0f);
 
 		mats.clear();
 		lamb0 = mats.add(material::lambertian(v3(0.5f)));
@@ -79,32 +112,13 @@ struct scene {
 		sphere_lane_builder builder;
 
 		builder.push(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f);
-		for (i32 a = -11; a < 11; a++) {
-			for (i32 b = -11; b < 11; b++) {
-				f32 choose_mat = randf_cpp();
-				v3 center(a+0.9f*randf_cpp(),0.2f,b+0.9f*randf_cpp()); 
+		builder.push(dia0, v3(0.0f, 1.0f, 0.0f), 1.0);
+		builder.push(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0);
+		builder.push(met0, v3(4.0f, 1.0f, 0.0f), 1.0);
 
-				if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
-					if (choose_mat < 0.8f) {
-						mat_id id = mats.add(material::lambertian(v3(randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp(), randf_cpp()*randf_cpp())));
-						builder.push(id, center, 0.2f);
-					} else if (choose_mat < 0.95) {
-						mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp()), 0.5f*(1.0f + randf_cpp())), 0.5f*randf_cpp()));
-						builder.push(id, center, 0.2f);
-					} else {
-						builder.push(dia0, center, 0.2f);
-					}
-				}
+		if(builder.not_empty()) list.push(builder.finish());
 
-				if(builder.done()) list.push(builder.finish());
-			}
-		}
-
-		builder.push(dia0, v3(0, 1, 0), 1.0);
-		builder.push(lamb1, v3(-4, 1, 0), 1.0);
-		builder.push(met0, v3(4, 1, 0), 1.0);
-
-		list.push(builder.finish());
+		list.push(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
 	}
 	void destroy() {
 		cam = {};
@@ -135,7 +149,7 @@ struct scene {
 		v3 result;
 		for(i32 s = 0; s < samples; s++) {
 			
-			f32 jitx = randf_cpp(), jity = randf_cpp();
+			f32 jitx = randomf(), jity = randomf();
 			ray r = cam.get_ray(u,v, jitx,jity);
 			
 			result += safe(compute(r));
