@@ -43,6 +43,7 @@ i32 cli_main(i32 argc, char** argv) {
 	std::cout << "Finished in " << (f64)(end - start) / SDL_GetPerformanceFrequency() << "s" << std::endl;
 	std::cout << "Writing to file..." << std::endl;
 	result.write_to_file(o);
+	result.destroy();
 
 	return 0;
 }
