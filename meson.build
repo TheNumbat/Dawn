@@ -18,11 +18,11 @@ sources = [
 	'deps/imgui/imgui_impl_sdl.cpp',
 	'deps/imgui/imgui_impl_opengl3.cpp',
 	'deps/glad/glad.cpp',
+	'src/lib/lib.cpp',
+	'src/lib/thread_pool.cpp',
 	'src/object.cpp',
 	'src/image.cpp',
 	'src/scene.cpp',
-	'src/lib.cpp',
-	'src/thread_pool.cpp',
 	'src/material.cpp',
 	'src/main.cpp']
 
@@ -61,7 +61,6 @@ endif
 executable('dawn', sources,
 	dependencies : deps,
 	include_directories : inc_dir, 
-	gui_app : true,
 	cpp_args : args,
 	link_args : link)
 

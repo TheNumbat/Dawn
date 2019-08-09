@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "math.h"
-#include "vec.h"
+#include "lib/math.h"
+#include "lib/vec.h"
 
 #include <vector>
 
@@ -129,7 +129,7 @@ struct object {
 	object(const object&& o) {memcpy(this,&o,sizeof(object));}
 	void operator=(const object& o) {memcpy(this,&o,sizeof(object));}
 	void operator=(const object&& o) {memcpy(this,&o,sizeof(object));}
-	object() {memset(this,sizeof(object),0);}
+	object() {memset(this,0,sizeof(object));}
 	void destroy() {
 		switch(type) {
 		case obj::none: break;

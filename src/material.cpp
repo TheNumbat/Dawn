@@ -1,6 +1,4 @@
 
-#pragma once
-
 #include "material.h"
 
 scatter lambertian::bsdf(const ray& incoming, const trace& surface) const {

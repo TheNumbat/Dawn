@@ -4,12 +4,48 @@
 #include <imgui.h>
 #include <imgui_impl_sdl.h>
 #include <imgui_impl_opengl3.h>
+#include <flags.h>
 
 #include <iostream>
+#include <chrono>
+#include <thread>
 
-#include "basic.h"
+#include "lib/basic.h"
 #include "image.h"
 #include "math.h"
+
+#define get(type,name) args.get<type>(name) ? *args.get<type>(name) : (std::cout << "Failed to get arg " << name << "!" << std::endl, exit(1), type())
+
+i32 cli_main(i32 argc, char** argv) {
+	
+	flags::args args(argc, argv);
+
+  	i32 w = get(int,"w");
+  	i32 h = get(int,"h");
+  	i32 s = get(int,"s");
+  	std::string o = get(std::string,"o");
+
+  	scene sc;
+	image result;
+
+	sc.init(w,h,s);
+	result.init(w,h,false);
+
+	std::cout << "Rendering " << w << "x" << h << "x" << s << " to " << o << "..." << std::endl;
+	u64 start = result.begin_render(sc);
+
+	while(!result.finish()) {
+		std::cout << "Completed: " << result.progress() * 100.0f << "%" << std::endl;
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
+	u64 end = SDL_GetPerformanceCounter();
+
+	std::cout << "Finished in " << (f64)(end - start) / SDL_GetPerformanceFrequency() << "s" << std::endl;
+	std::cout << "Writing to file..." << std::endl;
+	result.write_to_file(o);
+
+	return 0;
+}
 
 SDL_Window* window = nullptr;
 SDL_GLContext gl_context = nullptr;
@@ -67,7 +103,8 @@ void begin_frame() {
 	ImGui_ImplSDL2_NewFrame(window);
 	ImGui::NewFrame();
 }
-int main(int, char**) {
+
+void gui_main() {
 
 	plt_setup();
 
@@ -149,6 +186,13 @@ int main(int, char**) {
 	}
 
 	plt_shutdown();
+}
 
+i32 main(i32 argc, char** argv) {
+	
+	if(argc > 1) {
+		return cli_main(argc, argv);
+	}
+	gui_main();
 	return 0;
 }

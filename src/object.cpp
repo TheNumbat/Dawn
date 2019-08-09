@@ -1,6 +1,4 @@
 
-#pragma once
-
 #include "object.h"
 
 aabb aabb::enclose(const aabb& l, const aabb& r) {

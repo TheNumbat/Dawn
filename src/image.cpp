@@ -1,6 +1,4 @@
 
-#pragma once
-
 #include "image.h"
 
 bool render_thread(thread_data data) {
@@ -77,12 +75,17 @@ f32 image::progress() {
 	return (f32)tasks_complete.load() / total_tasks;
 }
 
-void image::init(u32 w, u32 h) {
+void image::init(u32 w, u32 h, bool use_ogl) {
 	width = w;
 	height = h;
 	data = new u32[width*height]();
-	glGenTextures(1, &handle);
-	commit();
+
+	ogl = use_ogl;
+	if(ogl) {
+		glGenTextures(1, &handle);
+		commit();
+	}
+
 	pool.start(SDL_GetCPUCount());
 }
 
@@ -90,7 +93,7 @@ void image::destroy() {
 	pool.finish();
 	delete[] data;
 	data = null;
-	if(handle) glDeleteTextures(1, &handle);
+	if(ogl && handle) glDeleteTextures(1, &handle);
 	width = height = handle = 0;
 }
 
@@ -108,6 +111,7 @@ void image::clear() {
 }
 
 void image::commit() {
+	if(!ogl) return;
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);

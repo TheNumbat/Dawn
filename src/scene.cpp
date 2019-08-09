@@ -1,6 +1,6 @@
 
 #include "scene.h"
-#include "vec.h"
+#include "lib/vec.h"
 
 void camera::init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 s, f32 d) {
 	wid = w;

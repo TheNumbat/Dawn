@@ -5,7 +5,7 @@
 #include <glad.h>
 #include <stb_image_write.h>
 
-#include "thread_pool.h"
+#include "lib/thread_pool.h"
 #include "scene.h"
 
 struct thread_data {
@@ -21,6 +21,8 @@ struct image {
 	
 	i32 width = 0, height = 0;
 	u32* data = nullptr;
+
+	bool ogl = true;
 	GLuint handle = 0;
 
 	static const i32 Block_Size = 32;
@@ -33,7 +35,7 @@ struct image {
 	bool in_progress();
 	f32 progress();
 
-	void init(u32 w, u32 h);
+	void init(u32 w, u32 h, bool use_ogl = true);
 	void destroy();
 	~image();
 
