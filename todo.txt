@@ -1,9 +1,6 @@
 TODO:
 
-Refactoring:
-	FINISH AABB CHAIN
-
-raytracing the next week
+raytracing the next week: page 13
 start PBRT book
 
 Performance: 640x480x128 - Debug-Optimized Build

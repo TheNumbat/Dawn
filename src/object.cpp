@@ -124,9 +124,15 @@ void object_list::destroy() {
 	objects.destroy();
 }
 
-aabb object_list::box(f32, f32) const {
-	assert(false);
-	return {};
+aabb object_list::box(f32 t0, f32 t1) const {
+	
+	assert(!objects.empty());
+
+	aabb ret = objects[0].box(t0, t1);
+	for(const object& o : objects) {
+		ret = aabb::enclose(ret,o.box(t0, t1));
+	}
+	return ret;
 }
 
 trace object_list::hit(const ray& r, f32 tmin, f32 tmax) const {

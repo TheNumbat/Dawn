@@ -48,7 +48,7 @@ struct sphere_lane {
 	f32_lane rad;
 	f32_lane mat;
 
-	aabb box(f32, f32) const;
+	aabb box(f32 t0, f32 t1) const;
 	trace hit(const ray& r, f32 tmin, f32 tmax) const;
 };
 

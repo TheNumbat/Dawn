@@ -1,4 +1,4 @@
-# dawn
+# Dawn
 
 ![shot](https://i.imgur.com/b93N7Xh.png)
 
