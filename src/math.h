@@ -9,8 +9,6 @@
 #include <immintrin.h>
 #include <xmmintrin.h>
 
-#define LANE_WIDTH 8
-
 #if LANE_WIDTH==8
 #define __lane __m256
 #define __add_ps _mm256_add_ps

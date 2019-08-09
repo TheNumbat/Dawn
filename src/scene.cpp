@@ -1,5 +1,6 @@
 
 #include "scene.h"
+#include "vec.h"
 
 void camera::init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 s, f32 d) {
 	wid = w;
@@ -101,7 +102,7 @@ v3 scene::pixel(f32 u, f32 v) const {
 
 object scene::random_scene() {
 	
-	std::vector<object> objs;
+	vec<object> objs;
 	sphere_lane_builder builder;
 
 	for (i32 a = -11; a < 11; a++) {
@@ -121,17 +122,17 @@ object scene::random_scene() {
 				}
 			}
 
-			if(builder.done()) objs.push_back(builder.finish());
+			if(builder.done()) objs.push(builder.finish());
 		}
 	}
-	if(builder.not_empty()) objs.push_back(builder.finish());
+	if(builder.not_empty()) objs.push(builder.finish());
 
 	return object::list(objs);
 }
 
 object scene::simple_scene() {
 
-	std::vector<object> objs;
+	vec<object> objs;
 	sphere_lane_builder builder;
 
 	builder.push(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f);
@@ -139,9 +140,10 @@ object scene::simple_scene() {
 	builder.push(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0);
 	builder.push(met0, v3(4.0f, 1.0f, 0.0f), 1.0);
 
-	if(builder.not_empty()) objs.push_back(builder.finish());
+	if(builder.not_empty()) objs.push(builder.finish());
 
-	objs.push_back(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
+	objs.push(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
 
-	return object::list(objs);
+	object v = object::list(objs);
+	return v;
 }

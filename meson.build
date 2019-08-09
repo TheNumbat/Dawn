@@ -30,6 +30,15 @@ link = []
 args = []
 deps = []
 
+if get_option('threading') and not (get_option('buildtype') == 'debug')
+	args += '-DUSE_THREADING' 
+endif
+if get_option('lane_width') == '4'
+	args += '-DLANE_WIDTH=4'
+else
+	args += '-DLANE_WIDTH=8'
+endif
+
 if host_system == 'windows'
 	
 	link += '../src/icon.res'

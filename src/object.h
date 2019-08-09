@@ -2,6 +2,7 @@
 #pragma once
 
 #include "math.h"
+#include "vec.h"
 
 #include <vector>
 
@@ -52,7 +53,7 @@ struct sphere_lane {
 };
 
 enum class obj : u8 {
-	none,
+	none = 0,
 	list,
 	sphere,
 	sphere_moving,
@@ -62,7 +63,7 @@ enum class obj : u8 {
 struct object;
 struct object_list {
 
-	std::vector<object> objects;
+	vec<object> objects;
 
 	void destroy();
 
@@ -78,10 +79,11 @@ struct object {
 		sphere_moving sm;
 		sphere_lane sl;
 	};
-	static object list(std::vector<object>& l) {
+	// NOTE(max): takes ownership of the vec
+	static object list(vec<object>& objs) {
 		object ret;
 		ret.type = obj::list;
-		ret.l = {std::move(l)};
+		ret.l = {vec<object>::take(objs)};
 		return ret;
 	}
 	static object sphere(i32 mat, v3 pos, f32 rad) {
@@ -127,8 +129,7 @@ struct object {
 	object(const object&& o) {memcpy(this,&o,sizeof(object));}
 	void operator=(const object& o) {memcpy(this,&o,sizeof(object));}
 	void operator=(const object&& o) {memcpy(this,&o,sizeof(object));}
-	object() {}
-	~object() { destroy(); }
+	object() {memset(this,sizeof(object),0);}
 	void destroy() {
 		switch(type) {
 		case obj::none: break;

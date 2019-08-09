@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#define USE_THREADING
-
 #include "basic.h"
 #include "image.h"
 #include "math.h"

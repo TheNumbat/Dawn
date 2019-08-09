@@ -123,8 +123,7 @@ trace sphere_lane::hit(const ray& r, f32 tmin, f32 tmax) const {
 }
 
 void object_list::destroy() {
-	using v = std::vector<object>;
-	objects.~v();
+	objects.destroy();
 }
 
 aabb object_list::box(f32, f32) const {
