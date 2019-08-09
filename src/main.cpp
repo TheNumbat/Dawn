@@ -20,12 +20,12 @@ i32 cli_main(i32 argc, char** argv) {
 	
 	flags::args args(argc, argv);
 
-  	i32 w = get(int,"w");
-  	i32 h = get(int,"h");
-  	i32 s = get(int,"s");
-  	std::string o = get(std::string,"o");
+	i32 w = get(int,"w");
+	i32 h = get(int,"h");
+	i32 s = get(int,"s");
+	std::string o = get(std::string,"o");
 
-  	scene sc;
+	scene sc;
 	image result;
 
 	sc.init(w,h,s);
@@ -151,37 +151,37 @@ void gui_main() {
 										  ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar | 
 										  ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-    	ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-	    ImGui::InputInt3("Size", size);
-	    ImGui::InputText("##file",(char*)file.c_str(),file.size());
-	    ImGui::SameLine();
-	    if(ImGui::Button("Save")) {
-	    	result.write_to_file(file);
-	    }
+		ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
+		ImGui::InputInt3("Size", size);
+		ImGui::InputText("##file",(char*)file.c_str(),file.size());
+		ImGui::SameLine();
+		if(ImGui::Button("Save")) {
+			result.write_to_file(file);
+		}
 
-	    if(ImGui::Button("Generate")) {
-	    	s.destroy();
-	    	result.destroy();
+		if(ImGui::Button("Generate")) {
+			s.destroy();
+			result.destroy();
 
-	    	s.init(size[0],size[1],size[2]);
+			s.init(size[0],size[1],size[2]);
 			result.init(size[0], size[1]);
 
-	    	start = result.begin_render(s);
-	    }
-    	ImGui::SameLine();
-	    if(result.in_progress()) {
-	    	ImGui::ProgressBar(result.progress());
-	    } else {
-	    	ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
-	    }
-	    if(result.finish()) {
-	    	u64 end = SDL_GetPerformanceCounter();
-	    	time = end - start;
-	    }
+			start = result.begin_render(s);
+		}
+		ImGui::SameLine();
+		if(result.in_progress()) {
+			ImGui::ProgressBar(result.progress());
+		} else {
+			ImGui::Text("Time: %.3fms", 1000.0f * (f64)time / SDL_GetPerformanceFrequency());
+		}
+		if(result.finish()) {
+			u64 end = SDL_GetPerformanceCounter();
+			time = end - start;
+		}
 
-	    ImGui::Image((ImTextureID)(iptr)result.handle, {(f32)size[0],(f32)size[1]});
+		ImGui::Image((ImTextureID)(iptr)result.handle, {(f32)size[0],(f32)size[1]});
 
-	    ImGui::End();
+		ImGui::End();
 
 		render_frame();
 	}
