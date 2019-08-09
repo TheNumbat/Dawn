@@ -142,8 +142,8 @@ object scene::simple_scene() {
 
 	if(builder.not_empty()) objs.push(builder.finish());
 
-	objs.push(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
+	// objs.push(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
+	objs.push(random_scene());
 
-	object v = object::list(objs);
-	return v;
+	return object::list(objs);
 }
