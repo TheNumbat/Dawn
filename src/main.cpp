@@ -14,7 +14,7 @@
 #include "render.h"
 #include "math.h"
 
-#define get(type,name) args.get<type>(name) ? *args.get<type>(name) : (std::cout << "Failed to get arg " << name << "!" << std::endl, exit(1), type())
+#define get(type,name) (args.get<type>(name) ? *args.get<type>(name) : (std::cout << "Failed to get arg " << name << "!" << std::endl, exit(1), type()))
 
 i32 cli_main(i32 argc, char** argv) {
 	
@@ -25,11 +25,15 @@ i32 cli_main(i32 argc, char** argv) {
 	i32 s = get(int,"s");
 	std::string o = get(std::string,"o");
 
-	scene sc;
-	renderer result;
+	std::cout << "Initializing renderer..." << std::endl;
 
-	sc.init(w,h);
+	renderer result;
 	result.init(w,h,s,false);
+
+	std::cout << "Building scene..." << std::endl;
+
+	scene sc;
+	sc.init(w,h);
 
 	std::cout << "Rendering " << w << "x" << h << "x" << s << " to " << o << "..." << std::endl;
 	u64 start = result.begin_render(sc);

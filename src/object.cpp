@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-bvh_node bvh_node::make(vec<object> objs, f32 tmin, f32 tmax) {
+i32 bvh::node::populate(vec<object> objs, vec<node>& nodes, i32 obj_offset, f32 tmin, f32 tmax) {
 
 	i32 axis = (i32)(randomf() * 3.0f);
 
@@ -14,46 +14,81 @@ bvh_node bvh_node::make(vec<object> objs, f32 tmin, f32 tmax) {
 		return lbox.min[axis] < rbox.min[axis];
 	});
 
-	bvh_node ret;
+	node ret;
 
-	// TODO(max): break into LANE_WIDTH chunks
-	// TODO(max): balance when we have 1 element?
 	if(objs.size == 1) {
-		// left = right = objs.begin();
+
+		ret.type_ = type::leaf;
+		ret.left = ret.right = obj_offset;
+
+		ret.box_ = objs[0].box(tmin, tmax);
+
+	} else if(objs.size == 2) {
+
+		ret.type_ = type::leaf;
+		ret.left = obj_offset;
+		ret.right = obj_offset + 1;
+
+		ret.box_ = aabb::enclose(objs[0].box(tmin, tmax), objs[1].box(tmin, tmax));
+
+	} else {
+		
+		ret.type_ = type::node;
+
+		vec<object>::split split = objs.halves();
+
+		ret.left = populate(split.l, nodes, obj_offset, tmin, tmax);
+		ret.right = populate(split.r, nodes, obj_offset + split.l.size, tmin, tmax);
+		
+		ret.box_ = aabb::enclose(nodes[ret.left].box_, nodes[ret.right].box_);
 	}
 
-	assert(false);
-	return ret;
-}
-
-aabb bvh_node::box(f32, f32) const {
-	return box_;
+	nodes.push(ret);
+	return nodes.size - 1;
 }
 
 bvh bvh::make(vec<object>& objs, f32 tmin, f32 tmax) {
 
+	assert(!objs.empty());
+
 	bvh ret;
 	ret.objects = vec<object>::take(objs);
-	ret.root = bvh_node::make(ret.objects, tmin, tmax);
+	ret.root = node::populate(ret.objects, ret.nodes, 0, tmin, tmax);
+
 	return ret;
 }
 
 void bvh::destroy() {
 	objects.destroy();
-
+	nodes.destroy();
+	root = -1;
 }
 
-aabb bvh::box(f32 tmin, f32 tmax) const {
-	return root.box(tmin, tmax);
+aabb bvh::box(f32, f32) const {
+	assert(root >= 0 && root < nodes.size);
+	return nodes[root].box_;
 }
 
-trace bvh_node::hit(const ray& ray, f32 tmin, f32 tmax) const {
+trace bvh::hit(const ray& ray, f32 tmin, f32 tmax) const {
 
-	trace ret;
-	if(box_.hit(ray, tmin, tmax)) {
+	return hit_recurse(ray, root, tmin, tmax);
+}
 
-		trace l = left->hit(ray, tmin, tmax);
-		trace r = right->hit(ray, tmin, tmax);
+trace bvh::hit_recurse(const ray& ray, i32 idx, f32 tmin, f32 tmax) const {
+
+	node current = nodes[idx];
+
+	if(current.box_.hit(ray, tmin, tmax)) {
+
+		trace l, r;
+		if(current.type_ == node::type::node) {
+			l = hit_recurse(ray, current.left, tmin, tmax);
+			r = hit_recurse(ray, current.right, tmin, tmax);
+		} else {
+			assert(current.type_ == node::type::leaf);
+			l = objects[current.left].hit(ray, tmin, tmax);
+			r = objects[current.right].hit(ray, tmin, tmax);
+		}
 
 		if(l.hit && r.hit) {
 			if(l.t < r.t) return l;
@@ -63,28 +98,29 @@ trace bvh_node::hit(const ray& ray, f32 tmin, f32 tmax) const {
 		if(l.hit) return l;
 		if(r.hit) return r;
 	}
-	return ret;
-}
-
-trace bvh::hit(const ray& r, f32 tmin, f32 tmax) const {
-	return root.hit(r, tmin, tmax);
+	return {};
 }
 
 aabb aabb::enclose(const aabb& l, const aabb& r) {
 	return {vmin(l.min,r.min),vmax(l.max,r.max)};
 }
 
-bool aabb::hit(const ray& incoming, f32 tmin, f32 tmax) const {
+bool aabb::hit(const ray& r, f32 tmin, f32 tmax) const {
 
-	v3 inv_dir = 1.0f / incoming.dir;
+	v3 inv_dir = 1.0f / r.dir;
 
-	v3 _0 = (min - incoming.pos) * inv_dir;
-	v3 _1 = (max - incoming.pos) * inv_dir;
+	v3 _0 = (min - r.pos) * inv_dir;
+	v3 _1 = (max - r.pos) * inv_dir;
 
-	v3 t0 = vmin(vmin(_0,_1),tmin);
-	v3 t1 = vmax(vmax(_0,_1),tmax);
+	v3 t0 = vmax(vmin(_0,_1),tmin);
+	v3 t1 = vmin(vmax(_0,_1),tmax);
 
-	return none(t1 <= t0);
+	for(i32 i = 0; i < 3; i++) {
+		tmin = fmaxf(t0[i], tmin);
+		tmax = fminf(t1[i], tmax);
+		if(tmax <= tmin) return false;
+	}
+	return true;
 }
 
 sphere sphere::make(v3 p, f32 r, i32 m) {

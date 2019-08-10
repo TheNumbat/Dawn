@@ -1,18 +1,35 @@
 TODO:
 
-raytracing the next week
-	finish bvh
-	use sphere_lane in BVH (replace in scene.cpp as well)
-	
+raytracing the next week: page 16
 start PBRT book
-	HDR and tone-mapping
-
+HDR and tone-mapping
 progressive rendering
 
-Optimization
-	better BVH building 
+Optimizations To-Do:
+	General:
+		don't calculate position + normal for each nearer object, instead store object ID
+		  and calculate after we have found the nearest object.
+
+		better BVH building
+			cache boxes on all objects?
+
+		SIMD
+			lane-aware BVH, have leaves potentially contain LANE_WIDTH objects?
+				pass to callback function to coalesce to object?
+				this would make us have a BVH per object type, which isn't ideal, but
+				could be worth it? of course, we can also just say you have to build
+				sphere_lanes with specially near spheres and submit them as normal 
+				objects to the BVH
+			sphere_moving_lane
+			aabb_lane
+
+		looking into ray_lane again (didn't work first time, too divergent?? could have been buggy)
+	
+	math_simd.h:
+		compare with and without constant refs
+
 	importance sampling
-	first-hit rasterizaiton?
+	first-hit rasterization
 	GPU compute/RTX path?
 
 Performance: 640x480x128 - Random Scene - Debug-Optimized Build
@@ -44,14 +61,3 @@ progressive rendering:
 	be useful.
 	So I'll do this when I feel like it.
 
-Optimizations To-Do:
-	General:
-		don't calculate position + normal for each nearer object, instead store object ID
-		  and calculate after we have found the nearest object.
-
-		sphere_moving_lane ? if we actually use them
-		! aabb_lane
-
-		looking into ray_lane again (didn't work first time, too divergent?? could have been buggy)
-	math_simd.h:
-		compare with and without const refs

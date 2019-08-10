@@ -87,6 +87,7 @@ union v3 {
 	void operator*=(f32 s) {v = _mm_mul_ps(v,_mm_set1_ps(s));}
 	void operator/=(f32 s) {v = _mm_div_ps(v,_mm_set1_ps(s));}
 	f32& operator[](i32 idx) {return a[idx];}
+	f32 operator[](i32 idx) const {return a[idx];}
 	v3 VEC operator-() const {return _mm_sub_ps(_mm_setzero_ps(),v);}
 
 	v3() {}

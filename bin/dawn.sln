@@ -9,6 +9,7 @@ Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "dawn", "..\build\dawn.exe",
 		Executable = C:\Users\Max\Code\dawn\build\dawn.exe
 		RemoteMachine = NUMBAT-DESKTOP
 		StartingDirectory = C:\Users\Max\Code\dawn\build
+		Arguments =  -w 640 -h 480 -s 8 -o output.png
 		Environment = Default
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No

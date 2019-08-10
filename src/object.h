@@ -24,25 +24,7 @@ struct aabb {
 	bool hit(const ray& incoming, f32 tmin, f32 tmax) const;
 };
 
-struct bvh_node {
-
-	static bvh_node make(vec<object> objs, f32 tmin, f32 tmax);
-	
-	aabb box(f32 tmin, f32 tmax) const;
-	trace hit(const ray& r, f32 tmin, f32 tmax) const;		
-	
-private:
-	aabb box_;
-	object* left = null;
-	object* right = null;
-};
-
 struct bvh {
-
-	bvh_node root;
-	
-	// TODO(max): is indexing by ID faster than pointer?
-	vec<object> objects;
 
 	// NOTE(max): takes ownership
 	static bvh make(vec<object>& objs, f32 tmin, f32 tmax);
@@ -50,6 +32,27 @@ struct bvh {
 
 	aabb box(f32 tmin, f32 tmax) const;
 	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+
+private:
+
+	trace hit_recurse(const ray& ray, i32 idx, f32 tmin, f32 tmax) const;
+
+	struct node {
+		enum class type : u8 {
+			node,
+			leaf
+		};
+
+		static i32 populate(vec<object> objs, vec<node>& nodes, i32 obj_offset, f32 tmin, f32 tmax);
+
+		aabb box_;
+		type type_ = type::node;
+		i32 left = 0, right = 0;
+	};
+
+	i32 root = -1;
+	vec<object> objects;
+	vec<node> nodes;
 };
 
 struct sphere {
@@ -98,7 +101,6 @@ private:
 enum class obj : u8 {
 	none = 0,
 	bvh,
-	bvh_node,
 	list,
 	sphere,
 	sphere_moving,
@@ -121,7 +123,6 @@ private:
 class object {
 	union {
 		bvh b;
-		bvh_node n;
 		object_list l;
 		sphere s;
 		sphere_moving sm;
@@ -143,12 +144,6 @@ public:
 		object ret;
 		ret.type = obj::bvh;
 		ret.b = bvh::make(objs, tmin, tmax);
-		return ret;
-	}
-	static object bvh_node(vec<object> objs, f32 tmin, f32 tmax) {
-		object ret;
-		ret.type = obj::bvh_node;
-		ret.n = bvh_node::make(objs, tmin, tmax);
 		return ret;
 	}
 	static object sphere(i32 mat, v3 pos, f32 rad) {
@@ -174,7 +169,6 @@ public:
 		case obj::bvh: return b.hit(r, tmin, tmax);
 		case obj::list: return l.hit(r, tmin, tmax);
 		case obj::sphere: return s.hit(r, tmin, tmax);
-		case obj::bvh_node: return b.hit(r, tmin, tmax);
 		case obj::sphere_lane: return sl.hit(r, tmin, tmax);
 		case obj::sphere_moving: return sm.hit(r, tmin, tmax);
 		default: assert(false);
@@ -186,7 +180,6 @@ public:
 		case obj::bvh: return b.box(t0, t1);
 		case obj::list: return l.box(t0, t1);
 		case obj::sphere: return s.box(t0, t1);
-		case obj::bvh_node: return b.box(t0, t1);
 		case obj::sphere_lane: return sl.box(t0, t1);
 		case obj::sphere_moving: return sm.box(t0, t1);
 		default: assert(false);
@@ -204,7 +197,6 @@ public:
 		case obj::bvh: b.destroy(); break;
 		case obj::list: l.destroy(); break;
 		case obj::sphere: s.destroy(); break;
-		case obj::bvh_node: b.destroy(); break;
 		case obj::sphere_lane: sl.destroy(); break;
 		case obj::sphere_moving: sm.destroy(); break;
 		default: assert(false);

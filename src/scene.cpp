@@ -124,7 +124,7 @@ object scene::random_scene() {
 		}
 	}
 
-	return object::list(objs, cam.start_time, cam.end_time);
+	return object::bvh(objs, cam.start_time, cam.end_time);
 }
 
 object scene::basic_scene() {

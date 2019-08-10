@@ -42,7 +42,7 @@ endif
 if host_system == 'windows'
 	
 	link += '../src/icon.res'
-	args += '-fp:fast'
+	args += ['-fp:fast', '-wd4201', '-wd4702']
 
 	inc_dir = include_directories('deps', 'deps/imgui', 'deps/stb', 'deps/glad')
 	sdl_dir = join_paths(project_dir, 'deps/SDL2/lib')
