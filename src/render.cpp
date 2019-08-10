@@ -1,15 +1,21 @@
 
-#include "image.h"
+#include "render.h"
 
 bool render_thread(thread_data data) {
 
-	for(int y = data.y; y < data.y + data.h; y++) {
+	for(i32 y = data.y; y < data.y + data.h; y++) {
 		f32 v = (f32)y / data.total_h;
 
-		for(int x = data.x; x < data.x + data.w; x++) {
+		for(i32 x = data.x; x < data.x + data.w; x++) {
 			f32 u = (f32)x / data.total_w;
 
-			v3 col = data.s->pixel(u,v);
+			v3 col;
+
+			for(i32 s = 0; s < data.s; s++) {
+				col += data.sc->sample(u,v);	
+			}
+
+			col /= (f32)data.s;
 
 			data.data[y * data.total_w + x] = 
 				(0xff << 24)                 | 
@@ -22,7 +28,7 @@ bool render_thread(thread_data data) {
 	return true;
 }
 
-u64 image::begin_render(const scene& s) {
+u64 renderer::begin_render(const scene& s) {
 
 	u64 start = SDL_GetPerformanceCounter();
 
@@ -39,10 +45,10 @@ u64 image::begin_render(const scene& s) {
 	for(i32 y = 0; y <= h_blocks; y++) {
 		for(i32 x = 0; x <= w_blocks; x++) {
 
-			thread_data t = {data, &s, x * Block_Size, y * Block_Size, 
+			thread_data t = {data, &s, x * Block_Size, y * Block_Size,
 							 x == w_blocks ? w_remaining : Block_Size, 
-							 y == h_blocks ? h_remaining : Block_Size, 
-							 width, height};
+							 y == h_blocks ? h_remaining : Block_Size,
+							 samples, width, height};
 
 			total_tasks++;
 
@@ -58,7 +64,7 @@ u64 image::begin_render(const scene& s) {
 	return start;
 }
 
-bool image::finish() {
+bool renderer::finish() {
 	commit();
 	if(tasks_complete.load() == total_tasks) {
 		tasks_complete = -1;
@@ -67,17 +73,19 @@ bool image::finish() {
 	return false;
 }
 
-bool image::in_progress() {
+bool renderer::in_progress() {
 	return tasks_complete.load() != -1;
 }
 
-f32 image::progress() {
+f32 renderer::progress() {
 	return (f32)tasks_complete.load() / total_tasks;
 }
 
-void image::init(u32 w, u32 h, bool use_ogl) {
+void renderer::init(i32 w, i32 h, i32 s, bool use_ogl) {
 	width = w;
 	height = h;
+	samples = s;
+
 	data = new u32[width*height]();
 
 	ogl = use_ogl;
@@ -89,7 +97,7 @@ void image::init(u32 w, u32 h, bool use_ogl) {
 	pool.start(SDL_GetCPUCount());
 }
 
-void image::destroy() {
+void renderer::destroy() {
 	pool.finish();
 	delete[] data;
 	data = null;
@@ -97,20 +105,20 @@ void image::destroy() {
 	width = height = handle = 0;
 }
 
-image::~image() {
+renderer::~renderer() {
 	pool.kill(); 
 	destroy();
 }
 
-void image::write_to_file(std::string file) {
+void renderer::write_to_file(std::string file) {
 	stbi_write_png(file.c_str(), width, height, 4, data, width * sizeof(u32));
 }
 
-void image::clear() {
+void renderer::clear() {
 	memset(data, 0, width * height * sizeof(u32));	
 }
 
-void image::commit() {
+void renderer::commit() {
 	if(!ogl) return;
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);

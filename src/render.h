@@ -10,16 +10,16 @@
 
 struct thread_data {
 	u32* data = null;
-	scene const* s = null;
-	i32 x,y,w,h;
+	scene const* sc = null;
+	i32 x,y,w,h,s;
 	i32 total_w, total_h;
 };
 
 bool render_thread(thread_data data);
 
-struct image {
+struct renderer {
 	
-	i32 width = 0, height = 0;
+	i32 width = 0, height = 0, samples = 0;
 	u32* data = nullptr;
 
 	bool ogl = true;
@@ -35,9 +35,9 @@ struct image {
 	bool in_progress();
 	f32 progress();
 
-	void init(u32 w, u32 h, bool use_ogl = true);
+	void init(i32 w, i32 h, i32 samples, bool use_ogl = true);
 	void destroy();
-	~image();
+	~renderer();
 
 	void write_to_file(std::string file);
 	void clear();

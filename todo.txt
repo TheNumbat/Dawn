@@ -2,8 +2,15 @@ TODO:
 
 raytracing the next week: page 13
 start PBRT book
+	HDR and tone-mapping
 
-Performance: 640x480x128 - Debug-Optimized Build
+progressive rendering
+importance sampling
+GPU
+	first-hit rasterizaiton?
+	GPU compute/RTX path?
+
+Performance: 640x480x128 - Random Scene - Debug-Optimized Build
 	
 	Base Scalar  : 107s		{48s Release}
 	SIMD v3      : 81.5s 	{29s Release}
@@ -16,6 +23,22 @@ Notes:
 	https://bitshifter.github.io/2018/06/04/simd-path-tracing/
 	http://aras-p.info/blog/2018/04/13/Daily-Pathtracer-9-A-wild-ryg-appears/
 
+progressive rendering:
+	This is somewhat non-trivial regarding thread scheduling -
+	easiest way to avoid load balancing problems would be to spawn a
+	task for each sample that renders the whole image at 1x and 
+	accumulate these into a float buffer.
+	This isn't too hard to implement - just have to spawn all tasks
+	and add oGL code for rendering the in-progress float buffer.
+	However, note that we can't have many threads writing to the same
+	portion of the image at the same time, so would need to synchronize
+	(slow) or have a separate buffer for each thread, then composite them
+	together.
+	For now this isn't really necessary as we can just render the image with
+	low samples during scene development, though an "add samples" option would
+	be useful.
+	So I'll do this when I feel like it.
+
 Optimizations To-Do:
 	General:
 		don't calculate position + normal for each nearer object, instead store object ID
@@ -27,5 +50,3 @@ Optimizations To-Do:
 		looking into ray_lane again (didn't work first time, too divergent?? could have been buggy)
 	math_simd.h:
 		compare with and without const refs
-	math.h:
-

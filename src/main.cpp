@@ -11,7 +11,7 @@
 #include <thread>
 
 #include "lib/basic.h"
-#include "image.h"
+#include "render.h"
 #include "math.h"
 
 #define get(type,name) args.get<type>(name) ? *args.get<type>(name) : (std::cout << "Failed to get arg " << name << "!" << std::endl, exit(1), type())
@@ -26,10 +26,10 @@ i32 cli_main(i32 argc, char** argv) {
 	std::string o = get(std::string,"o");
 
 	scene sc;
-	image result;
+	renderer result;
 
-	sc.init(w,h,s);
-	result.init(w,h,false);
+	sc.init(w,h);
+	result.init(w,h,s,false);
 
 	std::cout << "Rendering " << w << "x" << h << "x" << s << " to " << o << "..." << std::endl;
 	u64 start = result.begin_render(sc);
@@ -117,10 +117,10 @@ void gui_main() {
 	file.resize(100);
 
 	scene s;
-	image result;
+	renderer result;
 
-	s.init(size[0],size[1],size[2]);
-	result.init(size[0], size[1]);
+	s.init(size[0],size[1]);
+	result.init(size[0], size[1], size[2]);
 
 	bool running = true;
 	while(running) {
@@ -163,8 +163,8 @@ void gui_main() {
 			s.destroy();
 			result.destroy();
 
-			s.init(size[0],size[1],size[2]);
-			result.init(size[0], size[1]);
+			s.init(size[0], size[1]);
+			result.init(size[0], size[1], size[2]);
 
 			start = result.begin_render(s);
 		}

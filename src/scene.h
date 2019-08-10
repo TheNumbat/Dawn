@@ -29,17 +29,17 @@ struct scene {
 
 	object scene_obj;
 	camera cam;
-	i32 samples = 1, max_depth = 8;
+	i32 max_depth = 8;
 
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;
 
-	void init(i32 w, i32 h, i32 s);
+	void init(i32 w, i32 h);
 	void destroy();
 	~scene();
 
 	v3 compute(const ray& r, i32 depth = 0) const;
-	v3 pixel(f32 u, f32 v) const;
+	v3 sample(f32 u, f32 v) const;
 
 	object random_scene();
 	object simple_scene();

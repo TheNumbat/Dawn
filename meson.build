@@ -21,7 +21,7 @@ sources = [
 	'src/lib/lib.cpp',
 	'src/lib/thread_pool.cpp',
 	'src/object.cpp',
-	'src/image.cpp',
+	'src/render.cpp',
 	'src/scene.cpp',
 	'src/material.cpp',
 	'src/main.cpp']

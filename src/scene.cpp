@@ -49,8 +49,7 @@ scene::~scene() {
 	destroy();
 }
 
-void scene::init(i32 w, i32 h, i32 s) {
-	samples = s;
+void scene::init(i32 w, i32 h) {
 	cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f, 0.0f, 1.0f);
 
 	mats.clear();
@@ -66,7 +65,6 @@ void scene::destroy() {
 	cam = {};
 	scene_obj.destroy();
 	mats.clear();
-	samples = 1;
 }
 
 v3 scene::compute(const ray& r, i32 depth) const {
@@ -87,16 +85,14 @@ v3 scene::compute(const ray& r, i32 depth) const {
 	return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
 }
 
-v3 scene::pixel(f32 u, f32 v) const {
-	v3 result;
-	for(i32 s = 0; s < samples; s++) {
+v3 scene::sample(f32 u, f32 v) const {
 		
-		f32 jitx = randomf(), jity = randomf();
-		ray r = cam.get_ray(u,v, jitx,jity);
+	f32 jitx = randomf(), jity = randomf();
+	ray r = cam.get_ray(u,v, jitx,jity);
 		
-		result += safe(compute(r));
-	}
-	result /= (f32)samples;
+	v3 result = safe(compute(r));
+
+	// TODO(max): effect/HDR/Gamma pipeline
 	return pow(result, 1.0f / 2.2f);
 }
 
