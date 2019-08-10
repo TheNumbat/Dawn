@@ -13,7 +13,7 @@ struct camera {
 	f32 ar = 0.0f;
 	i32 wid = 0, hei = 0;
 	
-	f32 fov = 0.0f, aperture = 0.0f, start_time = 0.0f, duration = 0.0f;
+	f32 fov = 0.0f, aperture = 0.0f, start_time = 0.0f, end_time = 0.0f;
 
 	void init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 s, f32 d);
 	void update();
@@ -42,5 +42,5 @@ struct scene {
 	v3 sample(f32 u, f32 v) const;
 
 	object random_scene();
-	object simple_scene();
+	object basic_scene();
 };

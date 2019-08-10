@@ -1,12 +1,17 @@
 TODO:
 
-raytracing the next week: page 13
+raytracing the next week
+	finish bvh
+	use sphere_lane in BVH (replace in scene.cpp as well)
+	
 start PBRT book
 	HDR and tone-mapping
 
 progressive rendering
-importance sampling
-GPU
+
+Optimization
+	better BVH building 
+	importance sampling
 	first-hit rasterizaiton?
 	GPU compute/RTX path?
 

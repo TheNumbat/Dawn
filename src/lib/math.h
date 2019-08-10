@@ -357,6 +357,9 @@ inline v3 VEC lerp(v3 min, v3 max, f32 dist) {
 	return (max - min) * dist + min;
 }
 
+inline f32 lerp(f32 min, f32 max, f32 dist) {
+	return (max - min) * dist + min;
+}
 inline f32 safe(f32 f) {
 	return isnan(f) ? 0.0f : f;
 }

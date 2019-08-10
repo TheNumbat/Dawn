@@ -2,12 +2,12 @@
 #include "scene.h"
 #include "lib/vec.h"
 
-void camera::init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 s, f32 d) {
+void camera::init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 t0, f32 t1) {
 	wid = w;
 	hei = h;
 	pos = p;
-	start_time = s;
-	duration = d;
+	start_time = t0;
+	end_time = t1;
 	aperture = ap / 2.0f;
 	look = l;
 	fov = RADIANS(f);
@@ -39,7 +39,7 @@ ray camera::get_ray(f32 u, f32 v, f32 jitx, f32 jity) const {
 	jity /= (f32)hei;
 	u += jitx; v += jity;
 
-	f32 time = start_time + randomf() * duration;
+	f32 time = lerp(start_time, end_time, randomf());
 	v3 lens_pos = aperture * random_ledisk();
 	v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
 	return {offset, lower_left + u*horz_step + v*vert_step - offset, time};
@@ -58,7 +58,7 @@ void scene::init(i32 w, i32 h) {
 	met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
 	dia0 = mats.add(material::dielectric(1.5f));
 
-	scene_obj = simple_scene();
+	scene_obj = random_scene();
 }
 
 void scene::destroy() {
@@ -99,7 +99,11 @@ v3 scene::sample(f32 u, f32 v) const {
 object scene::random_scene() {
 	
 	vec<object> objs;
-	sphere_lane_builder builder;
+
+	objs.push(object::sphere(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
+	objs.push(object::sphere(dia0, v3(0.0f, 1.0f, 0.0f), 1.0));
+	objs.push(object::sphere(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0));
+	objs.push(object::sphere(met0, v3(4.0f, 1.0f, 0.0f), 1.0));
 
 	for (i32 a = -11; a < 11; a++) {
 		for (i32 b = -11; b < 11; b++) {
@@ -109,37 +113,28 @@ object scene::random_scene() {
 			if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
 				if (choose_mat < 0.8f) {
 					mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
-					builder.push(id, center, 0.2f);
+					objs.push(object::sphere(id, center, 0.2f));
 				} else if (choose_mat < 0.95) {
 					mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
-					builder.push(id, center, 0.2f);
+					objs.push(object::sphere(id, center, 0.2f));
 				} else {
-					builder.push(dia0, center, 0.2f);
+					objs.push(object::sphere(dia0, center, 0.2f));
 				}
 			}
-
-			if(builder.done()) objs.push(builder.finish());
 		}
 	}
-	if(builder.not_empty()) objs.push(builder.finish());
 
-	return object::list(objs);
+	return object::list(objs, cam.start_time, cam.end_time);
 }
 
-object scene::simple_scene() {
+object scene::basic_scene() {
 
 	vec<object> objs;
-	sphere_lane_builder builder;
 
-	builder.push(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f);
-	builder.push(dia0, v3(0.0f, 1.0f, 0.0f), 1.0);
-	builder.push(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0);
-	builder.push(met0, v3(4.0f, 1.0f, 0.0f), 1.0);
-
-	if(builder.not_empty()) objs.push(builder.finish());
-
-	// objs.push(object::sphere_moving(lamb1, v3(6.0f,1.0f,-2.0f), v3(6.0f,1.25f,-2.0f), 0.5f, 0.0f, 1.0f));
-	objs.push(random_scene());
+	objs.push(object::sphere(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
+	objs.push(object::sphere(dia0, v3(0.0f, 1.0f, 0.0f), 1.0));
+	objs.push(object::sphere(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0));
+	objs.push(object::sphere(met0, v3(4.0f, 1.0f, 0.0f), 1.0));
 
 	return object::list(objs);
 }

@@ -1,6 +1,75 @@
 
 #include "object.h"
 
+#include <algorithm>
+
+bvh_node bvh_node::make(vec<object> objs, f32 tmin, f32 tmax) {
+
+	i32 axis = (i32)(randomf() * 3.0f);
+
+	std::sort(objs.begin(), objs.end(), 
+		[axis, tmin, tmax](const object& l, const object& r) -> bool {
+		aabb lbox = l.box(tmin, tmax);
+		aabb rbox = r.box(tmin, tmax);
+		return lbox.min[axis] < rbox.min[axis];
+	});
+
+	bvh_node ret;
+
+	// TODO(max): break into LANE_WIDTH chunks
+	// TODO(max): balance when we have 1 element?
+	if(objs.size == 1) {
+		// left = right = objs.begin();
+	}
+
+	assert(false);
+	return ret;
+}
+
+aabb bvh_node::box(f32, f32) const {
+	return box_;
+}
+
+bvh bvh::make(vec<object>& objs, f32 tmin, f32 tmax) {
+
+	bvh ret;
+	ret.objects = vec<object>::take(objs);
+	ret.root = bvh_node::make(ret.objects, tmin, tmax);
+	return ret;
+}
+
+void bvh::destroy() {
+	objects.destroy();
+
+}
+
+aabb bvh::box(f32 tmin, f32 tmax) const {
+	return root.box(tmin, tmax);
+}
+
+trace bvh_node::hit(const ray& ray, f32 tmin, f32 tmax) const {
+
+	trace ret;
+	if(box_.hit(ray, tmin, tmax)) {
+
+		trace l = left->hit(ray, tmin, tmax);
+		trace r = right->hit(ray, tmin, tmax);
+
+		if(l.hit && r.hit) {
+			if(l.t < r.t) return l;
+			return r;
+		}
+
+		if(l.hit) return l;
+		if(r.hit) return r;
+	}
+	return ret;
+}
+
+trace bvh::hit(const ray& r, f32 tmin, f32 tmax) const {
+	return root.hit(r, tmin, tmax);
+}
+
 aabb aabb::enclose(const aabb& l, const aabb& r) {
 	return {vmin(l.min,r.min),vmax(l.max,r.max)};
 }
@@ -16,6 +85,14 @@ bool aabb::hit(const ray& incoming, f32 tmin, f32 tmax) const {
 	v3 t1 = vmax(vmax(_0,_1),tmax);
 
 	return none(t1 <= t0);
+}
+
+sphere sphere::make(v3 p, f32 r, i32 m) {
+	sphere ret;
+	ret.pos = p;
+	ret.rad = r;
+	ret.mat = m;
+	return ret;
 }
 
 aabb sphere::box(f32, f32) const {
@@ -56,18 +133,37 @@ trace sphere::hit(const ray& r, f32 tmin, f32 tmax) const {
 	return ret;
 }
 
+sphere_moving sphere_moving::make(v3 p0, v3 p1, f32 r, i32 m, f32 t0, f32 t1) {
+	sphere_moving ret;
+	ret.pos0 = p0;
+	ret.pos1 = p1;
+	ret.rad  = r;
+	ret.mat  = m;
+	ret.start = t0;
+	ret.duration = t1-t0;
+	return ret;
+}
+
 aabb sphere_moving::box(f32 t0, f32 t1) const {
 	v3 p0 = lerp(pos0, pos1, (t0 - start) / duration);
 	v3 p1 = lerp(pos0, pos1, (t1 - start) / duration);
-	return aabb::enclose(sphere{p0,rad,mat}.box(t0,t1),sphere{p1,rad,mat}.box(t0,t1));
+	return aabb::enclose(sphere::make(p0,rad,mat).box(t0,t1),sphere::make(p1,rad,mat).box(t0,t1));
 }
 
 trace sphere_moving::hit(const ray& r, f32 tmin, f32 tmax) const {
 
 	v3 pos = lerp(pos0, pos1, (r.t - start) / duration);
-	sphere s{pos, rad, mat};
+	sphere s = sphere::make(pos, rad, mat);
 	return s.hit(r, tmin, tmax);
 }	
+
+sphere_lane sphere_lane::make(v3_lane p, f32_lane r, f32_lane m) {
+	sphere_lane ret;
+	ret.pos = p;
+	ret.rad = r;
+	ret.mat = m;
+	return ret;
+}
 
 aabb sphere_lane::box(f32, f32) const {
 	v3_lane min = pos - rad;
@@ -117,6 +213,12 @@ trace sphere_lane::hit(const ray& r, f32 tmin, f32 tmax) const {
 	ret.normal = (ret.pos - pos[idx]) / rad.f[idx];
 	ret.mat = mat.i[idx];
 
+	return ret;
+}
+
+object_list object_list::make(vec<object>& objs) {
+	object_list ret;
+	ret.objects = vec<object>::take(objs);
 	return ret;
 }
 
