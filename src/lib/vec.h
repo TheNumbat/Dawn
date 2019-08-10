@@ -69,6 +69,10 @@ struct vec {
 		assert(idx >= 0 && idx < size);
 		return data[idx];
 	}
+	T* at(int idx) const {
+		assert(idx >= 0 && idx < size);
+		return data + idx;
+	}
 	T* begin() const {
 		return data;
 	}

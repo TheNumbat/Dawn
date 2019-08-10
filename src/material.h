@@ -84,7 +84,7 @@ struct material {
 	material(const material&& o) {memcpy(this,&o,sizeof(material));}
 	void operator=(const material& o) {memcpy(this,&o,sizeof(material));}
 	void operator=(const material&& o) {memcpy(this,&o,sizeof(material));}
-	material() {}
+	material() {memset(this,0,sizeof(material));}
 };
 
 typedef i32 mat_id;
@@ -101,6 +101,6 @@ struct materal_cache {
 	const material* get(mat_id id) const;
 
 private:
-	std::vector<material> mats;
+	vec<material> mats;
 	mat_id next_id = 0;
 };

@@ -83,7 +83,8 @@ void materal_cache::clear() {
 }
 
 void materal_cache::destroy() {
-	clear();
+	mats.destroy();
+	next_id = 0;
 }
 
 materal_cache::~materal_cache() {
@@ -91,10 +92,10 @@ materal_cache::~materal_cache() {
 }
 
 mat_id materal_cache::add(material m) {
-	mats.push_back(m);
+	mats.push(m);
 	return next_id++;
 }
 
 const material* materal_cache::get(mat_id id) const {
-	return &mats[id];
+	return mats.at(id);
 }
