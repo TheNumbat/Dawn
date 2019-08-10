@@ -47,7 +47,8 @@ Performance: 640x480x256 - Random 16x Scene - Release Build
 	BVH SIMD 	: 32.4s, 31.2s, 31.8s
 	LIST SIMD 	: 39.6s, 40s			{128x: 19s}
 
-	New minmax  : 12.4s 				{10s with clang??}
+	New minmax  : 12.4s, 11.3s			{10s with clang??}
+	Iterative Co: 10.7s, 11.3s 			{not really any change}
 
 Notes:
 	https://bitshifter.github.io/2018/06/04/simd-path-tracing/

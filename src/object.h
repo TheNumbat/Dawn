@@ -27,8 +27,8 @@ struct aabb {
 struct bvh {
 
 	// NOTE(max): takes ownership
-	static bvh make(vec<object> objs, f32 tmin, f32 tmax);
-	static bvh make(vec<object> objs, f32 tmin, f32 tmax, i32 leaf_span,
+	static bvh make(const vec<object>& objs, f32 tmin, f32 tmax);
+	static bvh make(const vec<object>& objs, f32 tmin, f32 tmax, i32 leaf_span,
 					std::function<object(vec<object>)> create_leaf);
 	void destroy();
 
@@ -45,7 +45,7 @@ private:
 			leaf
 		};
 
-		static i32 populate(vec<object> list, vec<object>& objs, vec<node>& nodes, 
+		static i32 populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 							f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf);
 
 		aabb box_;

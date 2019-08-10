@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-i32 bvh::node::populate(vec<object> list, vec<object>& objs, vec<node>& nodes, 
+i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 						f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 
 	i32 axis = (i32)(randomf() * 3.0f);
@@ -43,7 +43,7 @@ i32 bvh::node::populate(vec<object> list, vec<object>& objs, vec<node>& nodes,
 	return nodes.size - 1;
 }
 
-bvh bvh::make(vec<object> objs, f32 tmin, f32 tmax) {
+bvh bvh::make(const vec<object>& objs, f32 tmin, f32 tmax) {
 
 	assert(!objs.empty());
 
@@ -56,7 +56,7 @@ bvh bvh::make(vec<object> objs, f32 tmin, f32 tmax) {
 	return ret;
 }
 
-bvh bvh::make(vec<object> objs, f32 tmin, f32 tmax, i32 leaf_span,
+bvh bvh::make(const vec<object>& objs, f32 tmin, f32 tmax, i32 leaf_span,
 			  std::function<object(vec<object>)> create_leaf) {
 
 	assert(!objs.empty());
@@ -83,6 +83,7 @@ trace bvh::hit(const ray& ray, f32 tmin, f32 tmax) const {
 	return hit_recurse(ray, root, tmin, tmax);
 }
 
+// TODO(max): maybe make it not recursive?
 trace bvh::hit_recurse(const ray& ray, i32 idx, f32 tmin, f32 tmax) const {
 
 	node current = nodes[idx];

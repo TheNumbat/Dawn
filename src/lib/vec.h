@@ -8,19 +8,18 @@ struct vec {
 	T* data 	 = nullptr;
 	int size 	 = 0;
 	int capacity = 0;
-	bool can_grow = true;
 
 	static vec<T> make(int capacity = 8) {
-		return {new T[capacity], 0, capacity, true};
+		return {new T[capacity], 0, capacity};
 	}
 	static vec<T> copy(vec<T> source) {
-		vec<T> ret = {new T[source.capacity], source.size, source.capacity, true};
+		vec<T> ret = {new T[source.capacity], source.size, source.capacity};
 		memcpy(ret.data,source.data,sizeof(T)*source.size);
 		return ret;
 	}
 	static vec<T> take(vec<T>& source) {
 		vec<T> ret = source;
-		source = {nullptr, 0, 0, true};
+		source = {nullptr, 0, 0};
 		return ret;
 	}
 
@@ -28,11 +27,9 @@ struct vec {
 		delete[] data;
 		data = nullptr;
 		size = capacity = 0;
-		can_grow = true;
 	}
 	
 	void grow() {
-		assert(can_grow);
 		int new_capacity = capacity ? 2 * capacity : 8;
 		T* new_data = new T[new_capacity];
 		memcpy(new_data,data,sizeof(T)*capacity);
@@ -81,16 +78,13 @@ struct vec {
 	}
 
 	struct split {
-		vec<T> l, r;
+		const vec<T> l, r;
 	};
 
-	split halves() {
+	split halves() const {
 		assert(size > 1);
-		split ret;
 		i32 r_s = size / 2;
 		i32 l_s = r_s + size % 2;
-		ret.l = {data, l_s, l_s, false};
-		ret.r = {data + l_s, r_s, r_s, false};
-		return ret;
+		return {{data, l_s, l_s}, {data + l_s, r_s, r_s}};
 	}
 };

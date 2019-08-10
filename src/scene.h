@@ -38,7 +38,7 @@ struct scene {
 	void destroy();
 	~scene();
 
-	v3 compute(const ray& r, i32 depth = 0) const;
+	v3 compute(const ray& into) const;
 	v3 sample(f32 u, f32 v) const;
 
 	object random_list_scene();

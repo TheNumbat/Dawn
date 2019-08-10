@@ -67,22 +67,39 @@ void scene::destroy() {
 	mats.clear();
 }
 
-v3 scene::compute(const ray& r, i32 depth) const {
+v3 scene::compute(const ray& r_) const {
 	
-	trace t = scene_obj.hit(r, 0.001f, FLT_MAX);
-	if(t.hit) {
-		if(depth >= max_depth) return v3();
+	ray r = r_;
+	i32 depth = 0;
+	v3 accum(1.0f);	
+	
+	while(depth < max_depth) {
+		
+		trace t = scene_obj.hit(r, 0.001f, FLT_MAX);
+		if(t.hit) {
 
-		scatter s = mats.get(t.mat)->bsdf(r, t);
+			scatter s = mats.get(t.mat)->bsdf(r, t);
 
-		if(s.absorbed) return v3();
+			if(s.absorbed) {
+				accum *= v3{}; 
+				break;
+			} else {
+				accum *= s.attenuation;
+				r = s.out;
+			}
 
-		return s.attenuation * compute(s.out, depth+1);
+		} else {
+
+			v3 unit = norm(r.dir);
+			f32 fade = 0.5f * (unit.y + 1.0f);
+			accum *= lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+			break;
+		}
+
+		depth++;
 	}
 
-	v3 unit = norm(r.dir);
-	f32 fade = 0.5f * (unit.y + 1.0f);
-	return lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+	return accum;
 }
 
 v3 scene::sample(f32 u, f32 v) const {
