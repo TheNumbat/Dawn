@@ -40,11 +40,14 @@ Performance: 640x480x128 - Random Scene - Debug-Optimized Build
 	__vectorcall : 29s 		{29s}
 	SIMD Spheres : 13s
 	XorShift Rand: 11s 
+	BVH SIMD 	 : 5.5s
 
 Performance: 640x480x256 - Random 16x Scene - Release Build
 
 	BVH SIMD 	: 32.4s, 31.2s, 31.8s
 	LIST SIMD 	: 39.6s, 40s			{128x: 19s}
+
+	New minmax  : 12.4s 				{10s with clang??}
 
 Notes:
 	https://bitshifter.github.io/2018/06/04/simd-path-tracing/
