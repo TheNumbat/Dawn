@@ -337,8 +337,6 @@ void sphere_lane_builder::fill() {
 
 object sphere_lane_builder::finish() {
 
-	std::cout << idx << " " << std::endl;
-
 	fill();
 	assert(done());
 
