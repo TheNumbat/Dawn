@@ -123,8 +123,8 @@ bool aabb::hit(const ray& r, f32 tmin, f32 tmax) const {
 	v3 t1 = vmin(vmax(_0,_1),tmax);
 
 	for(i32 i = 0; i < 3; i++) {
-		tmin = fmaxf(t0[i], tmin);
-		tmax = fminf(t1[i], tmax);
+		tmin = t0[i] < tmin ? tmin : t0[i];
+		tmax = t1[i] < tmax ? t1[i] : tmax;
 		if(tmax <= tmin) return false;
 	}
 	return true;
