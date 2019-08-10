@@ -81,7 +81,7 @@ struct vec {
 	};
 
 	split halves() {
-		assert(size > 2);
+		assert(size > 1);
 		split ret;
 		i32 r_s = size / 2;
 		i32 l_s = r_s + size % 2;

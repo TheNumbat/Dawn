@@ -7,7 +7,7 @@
 #include <vector>
 #include <functional>
 
-class object;
+struct object;
 
 struct trace {
 	bool hit = false;
@@ -27,7 +27,9 @@ struct aabb {
 struct bvh {
 
 	// NOTE(max): takes ownership
-	static bvh make(vec<object>& objs, f32 tmin, f32 tmax);
+	static bvh make(vec<object> objs, f32 tmin, f32 tmax);
+	static bvh make(vec<object> objs, f32 tmin, f32 tmax, i32 leaf_span,
+					std::function<object(vec<object>)> create_leaf);
 	void destroy();
 
 	aabb box(f32 tmin, f32 tmax) const;
@@ -43,10 +45,14 @@ private:
 			leaf
 		};
 
-		static i32 populate(vec<object> objs, vec<node>& nodes, i32 obj_offset, f32 tmin, f32 tmax);
+		static i32 populate(vec<object> list, vec<object>& objs, vec<node>& nodes, 
+							f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf);
 
 		aabb box_;
 		type type_ = type::node;
+
+		// NOTE(max): note-> both populated with bvh::nodes, leaf-> left populated with object, right ignored 
+		// (leaves just wrap single objects)
 		i32 left = 0, right = 0;
 	};
 
@@ -67,6 +73,8 @@ private:
 	v3 pos;
 	f32 rad = 0.0f;
 	i32 mat = 0;
+
+	friend struct sphere_lane_builder;
 };
 
 struct sphere_moving {
@@ -120,7 +128,8 @@ private:
 	vec<object> objects;
 };
 
-class object {
+struct object {
+	obj type = obj::none;
 	union {
 		bvh b;
 		object_list l;
@@ -129,9 +138,6 @@ class object {
 		sphere_lane sl;
 	};
 
-public:
-	obj type = obj::none;
-
 	// NOTE(max): takes ownership
 	static object list(vec<object>& objs) {
 		object ret;
@@ -139,11 +145,17 @@ public:
 		ret.l = object_list::make(objs);
 		return ret;
 	}
-	// NOTE(max): takes ownership
-	static object bvh(vec<object>& objs, f32 tmin, f32 tmax) {
+	static object bvh(vec<object> objs, f32 tmin, f32 tmax) {
 		object ret;
 		ret.type = obj::bvh;
 		ret.b = bvh::make(objs, tmin, tmax);
+		return ret;
+	}
+	static object bvh(vec<object> objs, f32 tmin, f32 tmax, 
+					  i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
+		object ret;
+		ret.type = obj::bvh;
+		ret.b = bvh::make(objs, tmin, tmax, leaf_span, create_leaf);
 		return ret;
 	}
 	static object sphere(i32 mat, v3 pos, f32 rad) {
@@ -208,6 +220,8 @@ struct sphere_lane_builder {
 
 	void clear();
 	void push(i32 m, v3 p, f32 r);
+	void push(object s);
+	void fill();
 	bool done();
 	bool not_empty();
 	object finish();

@@ -29,7 +29,7 @@ struct scene {
 
 	object scene_obj;
 	camera cam;
-	i32 max_depth = 8;
+	i32 max_depth = 5;
 
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;
@@ -41,6 +41,7 @@ struct scene {
 	v3 compute(const ray& r, i32 depth = 0) const;
 	v3 sample(f32 u, f32 v) const;
 
-	object random_scene();
+	object random_list_scene();
+	object random_bvh_scene();
 	object basic_scene();
 };

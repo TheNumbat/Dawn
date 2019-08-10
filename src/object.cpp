@@ -3,11 +3,12 @@
 
 #include <algorithm>
 
-i32 bvh::node::populate(vec<object> objs, vec<node>& nodes, i32 obj_offset, f32 tmin, f32 tmax) {
+i32 bvh::node::populate(vec<object> list, vec<object>& objs, vec<node>& nodes, 
+						f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 
 	i32 axis = (i32)(randomf() * 3.0f);
 
-	std::sort(objs.begin(), objs.end(), 
+	std::sort(list.begin(), list.end(), 
 		[axis, tmin, tmax](const object& l, const object& r) -> bool {
 		aabb lbox = l.box(tmin, tmax);
 		aabb rbox = r.box(tmin, tmax);
@@ -16,29 +17,24 @@ i32 bvh::node::populate(vec<object> objs, vec<node>& nodes, i32 obj_offset, f32 
 
 	node ret;
 
-	if(objs.size == 1) {
+	assert(!list.empty());
+
+	if(list.size <= leaf_span) {
 
 		ret.type_ = type::leaf;
-		ret.left = ret.right = obj_offset;
 
-		ret.box_ = objs[0].box(tmin, tmax);
-
-	} else if(objs.size == 2) {
-
-		ret.type_ = type::leaf;
-		ret.left = obj_offset;
-		ret.right = obj_offset + 1;
-
-		ret.box_ = aabb::enclose(objs[0].box(tmin, tmax), objs[1].box(tmin, tmax));
+		objs.push(create_leaf(list));
+		ret.left = objs.size - 1;
+		ret.box_ = objs[ret.left].box(tmin, tmax);
 
 	} else {
 		
 		ret.type_ = type::node;
 
-		vec<object>::split split = objs.halves();
+		vec<object>::split split = list.halves();
 
-		ret.left = populate(split.l, nodes, obj_offset, tmin, tmax);
-		ret.right = populate(split.r, nodes, obj_offset + split.l.size, tmin, tmax);
+		ret.left = populate(split.l, objs, nodes, tmin, tmax, leaf_span, create_leaf);
+		ret.right = populate(split.r, objs, nodes, tmin, tmax, leaf_span, create_leaf);
 		
 		ret.box_ = aabb::enclose(nodes[ret.left].box_, nodes[ret.right].box_);
 	}
@@ -47,15 +43,28 @@ i32 bvh::node::populate(vec<object> objs, vec<node>& nodes, i32 obj_offset, f32 
 	return nodes.size - 1;
 }
 
-bvh bvh::make(vec<object>& objs, f32 tmin, f32 tmax) {
+bvh bvh::make(vec<object> objs, f32 tmin, f32 tmax) {
 
 	assert(!objs.empty());
 
 	bvh ret;
-	ret.objects = vec<object>::take(objs);
-	ret.root = node::populate(ret.objects, ret.nodes, 0, tmin, tmax);
+	ret.root = node::populate(objs, ret.objects, ret.nodes, tmin, tmax, 1, 
+		[](vec<object> list) -> object {
+			return list[0];
+		});
 
 	return ret;
+}
+
+bvh bvh::make(vec<object> objs, f32 tmin, f32 tmax, i32 leaf_span,
+			  std::function<object(vec<object>)> create_leaf) {
+
+	assert(!objs.empty());
+
+	bvh ret;
+	ret.root = node::populate(objs, ret.objects, ret.nodes, tmin, tmax, leaf_span, create_leaf);
+
+	return ret;	
 }
 
 void bvh::destroy() {
@@ -85,9 +94,7 @@ trace bvh::hit_recurse(const ray& ray, i32 idx, f32 tmin, f32 tmax) const {
 			l = hit_recurse(ray, current.left, tmin, tmax);
 			r = hit_recurse(ray, current.right, tmin, tmax);
 		} else {
-			assert(current.type_ == node::type::leaf);
-			l = objects[current.left].hit(ray, tmin, tmax);
-			r = objects[current.right].hit(ray, tmin, tmax);
+			return objects[current.left].hit(ray, tmin, tmax);
 		}
 
 		if(l.hit && r.hit) {
@@ -301,6 +308,15 @@ void sphere_lane_builder::push(i32 m, v3 p, f32 r) {
 	idx++;
 }
 
+void sphere_lane_builder::push(object o) {
+	assert(idx < LANE_WIDTH);
+	assert(o.type == obj::sphere);
+	pos.set(idx, o.s.pos);
+	rad.f[idx] = o.s.rad;
+	mat.i[idx] = o.s.mat;
+	idx++;
+}
+
 bool sphere_lane_builder::done() {
 	return idx == LANE_WIDTH;
 }
@@ -309,8 +325,23 @@ bool sphere_lane_builder::not_empty() {
 	return idx > 0;
 }
 
-object sphere_lane_builder::finish() {
+void sphere_lane_builder::fill() {
 	assert(not_empty());
+	while(idx < LANE_WIDTH) {
+		pos.set(idx, pos[idx - 1]);
+		rad.f[idx] = rad.f[idx - 1];
+		mat.i[idx] = mat.i[idx - 1];
+		idx++;
+	}
+}
+
+object sphere_lane_builder::finish() {
+
+	std::cout << idx << " " << std::endl;
+
+	fill();
+	assert(done());
+
 	object lane = object::sphere_lane(mat,pos,rad);
 	clear();
 	return lane;

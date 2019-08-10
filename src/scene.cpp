@@ -58,7 +58,7 @@ void scene::init(i32 w, i32 h) {
 	met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
 	dia0 = mats.add(material::dielectric(1.5f));
 
-	scene_obj = random_scene();
+	scene_obj = random_bvh_scene();
 }
 
 void scene::destroy() {
@@ -96,7 +96,42 @@ v3 scene::sample(f32 u, f32 v) const {
 	return pow(result, 1.0f / 2.2f);
 }
 
-object scene::random_scene() {
+object scene::random_list_scene() {
+	
+	vec<object> objs;
+	sphere_lane_builder builder;
+
+	builder.push(object::sphere(lamb0, v3(0.0f,-1000.0f,0.0f), 1000.0f));
+	builder.push(object::sphere(dia0, v3(0.0f, 1.0f, 0.0f), 1.0));
+	builder.push(object::sphere(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0));
+	builder.push(object::sphere(met0, v3(4.0f, 1.0f, 0.0f), 1.0));
+
+	for (i32 a = -16; a < 16; a++) {
+		for (i32 b = -16; b < 16; b++) {
+			f32 choose_mat = randomf();
+			v3 center(a+0.9f*randomf(),0.2f,b+0.9f*randomf()); 
+
+			if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
+				if (choose_mat < 0.8f) {
+					mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
+					builder.push(id, center, 0.2f);
+				} else if (choose_mat < 0.95) {
+					mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
+					builder.push(id, center, 0.2f);
+				} else {
+					builder.push(dia0, center, 0.2f);
+				}
+			}
+
+			if(builder.done()) objs.push(builder.finish());
+		}
+	}
+	if(builder.not_empty()) objs.push(builder.finish());
+
+	return object::list(objs);
+}
+
+object scene::random_bvh_scene() {
 	
 	vec<object> objs;
 
@@ -105,8 +140,8 @@ object scene::random_scene() {
 	objs.push(object::sphere(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0));
 	objs.push(object::sphere(met0, v3(4.0f, 1.0f, 0.0f), 1.0));
 
-	for (i32 a = -11; a < 11; a++) {
-		for (i32 b = -11; b < 11; b++) {
+	for (i32 a = -16; a < 16; a++) {
+		for (i32 b = -16; b < 16; b++) {
 			f32 choose_mat = randomf();
 			v3 center(a+0.9f*randomf(),0.2f,b+0.9f*randomf()); 
 
@@ -124,7 +159,23 @@ object scene::random_scene() {
 		}
 	}
 
-	return object::bvh(objs, cam.start_time, cam.end_time);
+#if 1
+	object ret = object::bvh(objs, cam.start_time, cam.end_time, LANE_WIDTH, [](vec<object> list) -> object {
+
+		sphere_lane_builder builder;
+
+		for(const object& o : list) {
+			builder.push(o);
+		}
+
+		return builder.finish();
+	});
+#else
+	object ret = object::bvh(objs, cam.start_time, cam.end_time);
+#endif 
+
+	objs.destroy();
+	return ret;
 }
 
 object scene::basic_scene() {
