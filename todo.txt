@@ -1,6 +1,10 @@
 TODO:
 
-raytracing the next week: page 21
+raytracing the next week: page 22
+	texture::noise has a problem
+	maybe move camera into scene definition
+	break out scene definitions into it's own files; prep for model/scene loading
+
 start PBRT book
 HDR and tone-mapping
 progressive rendering

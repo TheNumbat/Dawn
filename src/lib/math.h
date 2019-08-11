@@ -847,7 +847,7 @@ struct perlin {
 	i32 x_perm[256] = {}, y_perm[256] = {}, z_perm[256] = {};
 
 	void init() {
-		for(i32 i = 0; i  < 256; i++) {
+		for(i32 i = 0; i < 256; i++) {
 			floats[i] = randomf();
 			x_perm[i] = y_perm[i] = z_perm[i] = i;
 		}

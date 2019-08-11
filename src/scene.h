@@ -25,15 +25,41 @@ private:
 	v3 lower_left, horz_step, vert_step;
 };
 
-struct scene {
+struct random_bvh_scene {
+	
+	object init(f32 tmin, f32 tmax);
+	void destroy();
+	material* get(i32 idx) const;
 
-	object scene_obj;
-	camera cam;
-	i32 max_depth = 5;
-
+private:
 	texture even, odd;
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;
+};
+
+struct basic_scene {
+	
+	object init(f32 tmin, f32 tmax);
+	void destroy() {}
+	material* get(i32 idx) const;
+
+private:
+	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
+	materal_cache mats;
+};
+
+struct noise_scene {
+	
+	object init(f32 tmin, f32 tmax);
+	void destroy() {}
+	material* get(i32 idx) const;
+
+private:
+	i32 lamb = 0;
+	materal_cache mats;
+};
+
+struct scene {
 
 	void init(i32 w, i32 h);
 	void destroy();
@@ -42,8 +68,10 @@ struct scene {
 	v3 compute(const ray& into) const;
 	v3 sample(f32 u, f32 v) const;
 
-	object random_list_scene();
-	object random_bvh_scene();
-	object basic_scene();
-	object two_sphere_scene();
+private:
+	object scene_obj;
+	camera cam;
+	i32 max_depth = 5;
+
+	noise_scene def;
 };

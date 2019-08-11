@@ -6,7 +6,8 @@
 enum class tex : u8 {
 	none = 0,
 	constant,
-	checkerboard
+	checkerboard,
+	noise
 };
 
 struct texture;
@@ -33,11 +34,23 @@ private:
 	texture *odd = null, *even = null;
 };
 
+struct pnoise {
+
+	static pnoise make();
+	void destroy() {}
+
+	v3 sample(f32 u, f32 v, v3 p) const;
+
+private:
+	perlin noise;
+};
+
 struct texture {
 	tex type = tex::none;
 	union {
 		constant c;
 		checkerboard cb;
+		pnoise n;
 	};
 	static texture constant(v3 color) {
 		texture ret;
@@ -51,10 +64,17 @@ struct texture {
 		ret.cb = checkerboard::make(odd, even);
 		return ret;
 	}
+	static texture noise() {
+		texture ret;
+		ret.type = tex::noise;
+		ret.n = pnoise::make();
+		return ret;
+	}
 	v3 sample(f32 u, f32 v, v3 p) const {
 		switch(type) {
 		case tex::constant: return c.sample(u,v,p);
 		case tex::checkerboard: return cb.sample(u,v,p);
+		case tex::noise: return n.sample(u,v,p);
 		default: assert(false);
 		}
 		return {};

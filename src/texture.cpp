@@ -30,3 +30,13 @@ v3 checkerboard::sample(f32 u, f32 v, v3 p) const {
 		return odd->sample(u,v,p);
 	return even->sample(u,v,p);
 }
+
+pnoise pnoise::make() {
+	pnoise ret;
+	ret.noise.init();
+	return ret;
+}
+
+v3 pnoise::sample(f32, f32, v3 p) const {
+	return noise.noise(p);
+}
