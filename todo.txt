@@ -1,6 +1,6 @@
 TODO:
 
-raytracing the next week: page 16
+raytracing the next week: page 21
 start PBRT book
 HDR and tone-mapping
 progressive rendering
