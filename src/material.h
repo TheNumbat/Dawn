@@ -5,7 +5,7 @@
 #include "object.h"
 
 enum class mat : u8 {
-	none,
+	none = 0,
 	lambertian,
 	metal,
 	dielectric
@@ -98,7 +98,7 @@ struct materal_cache {
 
 	mat_id add(material m);
 	// NOTE(max): unstable when mats grows!!
-	const material* get(mat_id id) const;
+	material* get(mat_id id) const;
 
 private:
 	vec<material> mats;

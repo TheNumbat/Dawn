@@ -96,6 +96,6 @@ mat_id materal_cache::add(material m) {
 	return next_id++;
 }
 
-const material* materal_cache::get(mat_id id) const {
+material* materal_cache::get(mat_id id) const {
 	return mats.at(id);
 }

@@ -3,6 +3,17 @@
 
 #include <algorithm>
 
+trace trace::min(const trace& l, const trace& r) {
+
+	if(l.hit && r.hit) {
+		if(l.t < r.t) return l;
+		return r;
+	}
+	if(l.hit) return l;
+	if(r.hit) return r;
+	return {};
+}
+
 i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 						f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 
@@ -27,6 +38,8 @@ i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 		ret.left = objs.size - 1;
 		ret.box_ = objs[ret.left].box(tmin, tmax);
 
+		nodes.push(ret);
+
 	} else {
 		
 		ret.type_ = type::node;
@@ -35,11 +48,13 @@ i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 
 		ret.left = populate(split.l, objs, nodes, tmin, tmax, leaf_span, create_leaf);
 		ret.right = populate(split.r, objs, nodes, tmin, tmax, leaf_span, create_leaf);
-		
 		ret.box_ = aabb::enclose(nodes[ret.left].box_, nodes[ret.right].box_);
+
+		nodes.push(ret);
+		nodes[ret.left].parent = nodes.size - 1;
+		nodes[ret.right].parent = nodes.size - 1;
 	}
 
-	nodes.push(ret);
 	return nodes.size - 1;
 }
 
@@ -78,35 +93,103 @@ aabb bvh::box(f32, f32) const {
 	return nodes[root].box_;
 }
 
-trace bvh::hit(const ray& ray, f32 tmin, f32 tmax) const {
+// NOTE(max): http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.445.7529&rep=rep1&type=pdf
+trace bvh::hit(const ray& r, f32 tmin, f32 tmax) const {
 
-	return hit_recurse(ray, root, tmin, tmax);
-}
+	assert(root >= 0 && root < nodes.size);
+	assert(nodes[root].type_ == node::type::node);
 
-// TODO(max): maybe make it not recursive?
-trace bvh::hit_recurse(const ray& ray, i32 idx, f32 tmin, f32 tmax) const {
+	trace result;
+	
+	// Current node index
+	i32 idx = nodes[root].left;
 
-	node current = nodes[idx];
+	// Where we are visiting this node from
+	state s = state::parent;
 
-	if(current.box_.hit(ray, tmin, tmax)) {
+	for(;;) {
+		switch(s) {
 
-		trace l, r;
-		if(current.type_ == node::type::node) {
-			l = hit_recurse(ray, current.left, tmin, tmax);
-			r = hit_recurse(ray, current.right, tmin, tmax);
-		} else {
-			return objects[current.left].hit(ray, tmin, tmax);
+		// Visit left nodes from their parent
+		case state::parent: {
+			
+			node current = nodes[idx];
+
+			if(current.box_.hit(r, tmin, tmax)) {
+				if(current.type_ == node::type::leaf) {
+					
+					result = trace::min(result, objects[current.left].hit(r, tmin, tmax));
+				
+					// Finished, traverse right subtree
+					idx = nodes[current.parent].right;
+					s = state::sibling;
+
+				} else {
+
+					// Traverse left subtree
+					idx = current.left;
+					s = state::parent;
+				}
+			} else {
+
+				// Finished, traverse right subtree
+				idx = nodes[current.parent].right;
+				s = state::sibling;
+			}
+		} break;
+
+		// Visit right nodes from their left node sibling
+		case state::sibling: {
+
+			node current = nodes[idx];
+
+			if(current.box_.hit(r, tmin, tmax)) {
+				if(current.type_ == node::type::leaf) {
+
+					result = trace::min(result, objects[current.left].hit(r, tmin, tmax));
+
+					// Finished, go up
+					idx = current.parent;
+					s = state::child;
+
+				} else {
+
+					// Traverse left subtree
+					idx = current.left;
+					s = state::parent;
+				}
+			} else {
+
+				// Fished, go up
+				idx = current.parent;
+				s = state::child;
+			}
+		} break;
+
+		// Visit all nodes from their children when traversing back up the tree
+		case state::child: {
+			
+			// Traversal complete
+			if(idx == root) return result;
+			
+			i32 p_idx = nodes[idx].parent;
+			node parent = nodes[p_idx];
+
+			// Traverse right subtree
+			if(idx == parent.left) {
+
+				idx = parent.right;
+				s = state::sibling;
+
+			// Finished, go up
+			} else {
+
+				idx = p_idx;
+				s = state::child;
+			}
+		} break;
 		}
-
-		if(l.hit && r.hit) {
-			if(l.t < r.t) return l;
-			return r;
-		}
-
-		if(l.hit) return l;
-		if(r.hit) return r;
 	}
-	return {};
 }
 
 aabb aabb::enclose(const aabb& l, const aabb& r) {

@@ -9,11 +9,22 @@
 
 struct object;
 
+enum class obj : u8 {
+	none = 0,
+	bvh,
+	list,
+	sphere,
+	sphere_moving,
+	sphere_lane
+};
+
 struct trace {
 	bool hit = false;
 	f32 t = 0.0f;
 	i32 mat = 0;
 	v3 pos, normal;
+
+	static trace min(const trace& l, const trace& r);
 };
 
 struct aabb {
@@ -26,7 +37,6 @@ struct aabb {
 
 struct bvh {
 
-	// NOTE(max): takes ownership
 	static bvh make(const vec<object>& objs, f32 tmin, f32 tmax);
 	static bvh make(const vec<object>& objs, f32 tmin, f32 tmax, i32 leaf_span,
 					std::function<object(vec<object>)> create_leaf);
@@ -37,7 +47,11 @@ struct bvh {
 
 private:
 
-	trace hit_recurse(const ray& ray, i32 idx, f32 tmin, f32 tmax) const;
+	enum class state : u8 {
+		parent,
+		sibling,
+		child
+	};
 
 	struct node {
 		enum class type : u8 {
@@ -53,7 +67,7 @@ private:
 
 		// NOTE(max): note-> both populated with bvh::nodes, leaf-> left populated with object, right ignored 
 		// (leaves just wrap single objects)
-		i32 left = 0, right = 0;
+		i32 left = 0, right = 0, parent = 0;
 	};
 
 	i32 root = -1;
@@ -104,15 +118,6 @@ private:
 	v3_lane pos;
 	f32_lane rad;
 	f32_lane mat;
-};
-
-enum class obj : u8 {
-	none = 0,
-	bvh,
-	list,
-	sphere,
-	sphere_moving,
-	sphere_lane
 };
 
 struct object_list {
