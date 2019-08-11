@@ -53,12 +53,15 @@ void scene::init(i32 w, i32 h) {
 	cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f, 0.0f, 1.0f);
 
 	mats.clear();
-	lamb0 = mats.add(material::lambertian(v3(0.5f)));
-	lamb1 = mats.add(material::lambertian(v3(0.4f,0.2f,0.1f)));
+	even = texture::constant(v3(0.2f, 0.3f, 0.1f));
+	odd = texture::constant(v3(0.9f));
+
+	lamb0 = mats.add(material::lambertian(texture::checkerboard(&even, &odd)));
+	lamb1 = mats.add(material::lambertian(texture::constant(v3(0.4f,0.2f,0.1f))));
 	met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
 	dia0 = mats.add(material::dielectric(1.5f));
 
-	scene_obj = random_bvh_scene();
+	scene_obj = two_sphere_scene();
 }
 
 void scene::destroy() {
@@ -130,7 +133,7 @@ object scene::random_list_scene() {
 
 			if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
 				if (choose_mat < 0.8f) {
-					mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
+					mat_id id = mats.add(material::lambertian(texture::constant(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf()))));
 					builder.push(id, center, 0.2f);
 				} else if (choose_mat < 0.95) {
 					mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
@@ -164,7 +167,7 @@ object scene::random_bvh_scene() {
 
 			if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
 				if (choose_mat < 0.8f) {
-					mat_id id = mats.add(material::lambertian(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf())));
+					mat_id id = mats.add(material::lambertian(texture::constant(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf()))));
 					objs.push(object::sphere(id, center, 0.2f));
 				} else if (choose_mat < 0.95) {
 					mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
@@ -193,6 +196,16 @@ object scene::random_bvh_scene() {
 
 	objs.destroy();
 	return ret;
+}
+
+object scene::two_sphere_scene() {
+
+	vec<object> objs;
+
+	objs.push(object::sphere(lamb0, v3(0.0f,-10.0f,0.0f), 10.0f));
+	objs.push(object::sphere(lamb0, v3(0.0f, 10.0f,0.0f), 10.0f));
+
+	return object::list(objs);
 }
 
 object scene::basic_scene() {

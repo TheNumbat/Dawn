@@ -1,11 +1,24 @@
 
 #include "material.h"
 
+lambertian lambertian::make(texture t) {
+	lambertian ret;
+	ret.tex = t;
+	return ret;
+}
+
 scatter lambertian::bsdf(const ray& incoming, const trace& surface) const {
 	scatter ret;
 	v3 out = surface.pos + surface.normal + random_leunit();
 	ret.out = {surface.pos, out - surface.pos, incoming.t};
-	ret.attenuation = albedo;
+	ret.attenuation = tex.sample(0.0f, 0.0f, surface.pos);
+	return ret;
+}
+
+metal metal::make(v3 p, f32 r) {
+	metal ret;
+	ret.albedo = p;
+	ret.rough = r;
 	return ret;
 }
 
@@ -15,6 +28,12 @@ scatter metal::bsdf(const ray& incoming, const trace& surface) const {
 	ret.out = {surface.pos, r + rough * random_leunit(), incoming.t};
 	ret.absorbed = dot(r, surface.normal) <= 0.0f;
 	ret.attenuation = albedo;
+	return ret;
+}
+
+dielectric dielectric::make(f32 i) {
+	dielectric ret;
+	ret.index = i;
 	return ret;
 }
 
@@ -78,7 +97,7 @@ materal_cache::materal_cache() {
 
 void materal_cache::clear() {
 	mats.clear(); 
-	add(material::lambertian(v3(1.0f,0.0f,0.0f)));
+	add(material::lambertian(texture::constant(v3(1.0f,0.0f,0.0f))));
 	next_id = 1;
 }
 

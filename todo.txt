@@ -47,13 +47,14 @@ Performance: 640x480x256 - Random 16x Scene - Release Build
 	BVH SIMD 	: 32.4s, 31.2s, 31.8s
 	LIST SIMD 	: 39.6s, 40s			{128x: 19s}
 
-	New minmax  : 12.4s, 11.3s			{10s with clang??}
-	Iterative Co: 10.7s, 11.3s 			{not really any change}
+	New minmax  	 : 12.4s, 11.3s			{10s with clang??}
+	Iterative Compute: 10.7s, 11.3s 		{not really any change}
+	Iterative BVH 	 : 8.5s 				{only on release build}
 
 Notes:
 	https://bitshifter.github.io/2018/06/04/simd-path-tracing/
 	http://aras-p.info/blog/2018/04/13/Daily-Pathtracer-9-A-wild-ryg-appears/
-	
+
 progressive rendering:
 	This is somewhat non-trivial regarding thread scheduling -
 	easiest way to avoid load balancing problems would be to spawn a

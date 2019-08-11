@@ -31,6 +31,7 @@ struct scene {
 	camera cam;
 	i32 max_depth = 5;
 
+	texture even, odd;
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 	materal_cache mats;
 
@@ -44,4 +45,5 @@ struct scene {
 	object random_list_scene();
 	object random_bvh_scene();
 	object basic_scene();
+	object two_sphere_scene();
 };

@@ -23,6 +23,7 @@ sources = [
 	'src/object.cpp',
 	'src/render.cpp',
 	'src/scene.cpp',
+	'src/texture.cpp',
 	'src/material.cpp',
 	'src/main.cpp']
 
