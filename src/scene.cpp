@@ -61,7 +61,7 @@ void scene::init(i32 w, i32 h) {
 	met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
 	dia0 = mats.add(material::dielectric(1.5f));
 
-	scene_obj = two_sphere_scene();
+	scene_obj = random_bvh_scene();
 }
 
 void scene::destroy() {

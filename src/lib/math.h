@@ -347,15 +347,22 @@ inline f32 len(const v3 v) {
 inline v3 VEC norm(const v3 v) {
 	return v / len(v);
 }
-inline v3 VEC cross(v3 l, v3 r) {
+inline v3 VEC cross(const v3 l, const v3 r) {
 	__m128 ret = _mm_sub_ps(
 		_mm_mul_ps(r.v, _mm_shuffle_ps(l.v, l.v, _MM_SHUFFLE(3, 0, 2, 1))), 
 		_mm_mul_ps(l.v, _mm_shuffle_ps(r.v, r.v, _MM_SHUFFLE(3, 0, 2, 1))));
 	return {_mm_shuffle_ps(ret, ret, _MM_SHUFFLE(3, 0, 2, 1 ))};
 }
 
-inline v3 VEC lerp(v3 min, v3 max, f32 dist) {
+inline v3 VEC lerp(const v3 min, const v3 max, f32 dist) {
 	return (max - min) * dist + min;
+}
+
+inline v3 VEC floor(const v3 v) {
+	return {_mm_floor_ps(v.v)};
+}
+inline v3 VEC fract(const v3 v) {
+	return v - floor(v);
 }
 
 inline f32 lerp(f32 min, f32 max, f32 dist) {
@@ -366,64 +373,6 @@ inline f32 safe(f32 f) {
 }
 inline v3 safe(const v3 v) {
 	return (isnan(v.x) || isnan(v.y) || isnan(v.z)) ? v3{} : v;
-}
-
-inline u32 randomu() {
-	u32 t;
-	__state.x ^= __state.x << 16;
-	__state.x ^= __state.x >> 5;
-	__state.x ^= __state.x << 1;
-	t = __state.x;
-	__state.x = __state.y;
-	__state.y = __state.z;
-	__state.z = t ^ __state.x ^ __state.y;
-	return __state.z;
-}
-inline f32 randomf() {
-	return (f32)randomu() / UINT32_MAX;
-}
-inline v3 random_leunit() {
-	v3 v;
-	do {
-		v = 2.0f * v3(randomf(),randomf(),randomf()) - v3(1.0f);
-	} while(lensq(v) >= 1.0f);
-	return v;
-}
-inline v3 random_ledisk() {
-	v3 v;
-	do {
-		v = 2.0f * v3(randomf(),randomf(),0.0f) - v3(1.0f,1.0f,0.0f);
-	} while(lensq(v) >= 1.0f);
-	return v;	
-}
-
-inline f32_lane randomf_lane() {
-	f32_lane ret;
-	for(i32 i = 0; i < LANE_WIDTH; i++) {
-		f32 r = randomf();
-		ret.f[i] = r;
-	}
-	return ret;
-}
-inline v3_lane random_leunit_lane() {
-	v3_lane ret;
-	for(i32 i = 0; i < LANE_WIDTH; i++) {
-		const v3 r = random_leunit();
-		ret.xf[i] = r.x;
-		ret.yf[i] = r.y;
-		ret.zf[i] = r.z;
-	}
-	return ret;
-}
-inline v3_lane random_ledisk_lane() {
-	v3_lane ret;
-	for(i32 i = 0; i < LANE_WIDTH; i++) {
-		const v3 r = random_ledisk();
-		ret.xf[i] = r.x;
-		ret.yf[i] = r.y;
-		ret.zf[i] = r.z;
-	}
-	return ret;	
 }
 
 inline v3_lane VEC operator+(const v3_lane& l, const v3_lane& r) {
@@ -833,6 +782,102 @@ inline v3 ray::get(f32 d) const {
 inline v3_lane ray_lane::get(const f32_lane& t) const {
 	return pos + t * dir;
 }
+
+inline u32 randomu() {
+	u32 t;
+	__state.x ^= __state.x << 16;
+	__state.x ^= __state.x >> 5;
+	__state.x ^= __state.x << 1;
+	t = __state.x;
+	__state.x = __state.y;
+	__state.y = __state.z;
+	__state.z = t ^ __state.x ^ __state.y;
+	return __state.z;
+}
+inline f32 randomf() {
+	return (f32)randomu() / UINT32_MAX;
+}
+inline v3 random_leunit() {
+	v3 v;
+	do {
+		v = 2.0f * v3(randomf(),randomf(),randomf()) - v3(1.0f);
+	} while(lensq(v) >= 1.0f);
+	return v;
+}
+inline v3 random_ledisk() {
+	v3 v;
+	do {
+		v = 2.0f * v3(randomf(),randomf(),0.0f) - v3(1.0f,1.0f,0.0f);
+	} while(lensq(v) >= 1.0f);
+	return v;	
+}
+
+inline f32_lane randomf_lane() {
+	f32_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		f32 r = randomf();
+		ret.f[i] = r;
+	}
+	return ret;
+}
+inline v3_lane random_leunit_lane() {
+	v3_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		const v3 r = random_leunit();
+		ret.xf[i] = r.x;
+		ret.yf[i] = r.y;
+		ret.zf[i] = r.z;
+	}
+	return ret;
+}
+inline v3_lane random_ledisk_lane() {
+	v3_lane ret;
+	for(i32 i = 0; i < LANE_WIDTH; i++) {
+		const v3 r = random_ledisk();
+		ret.xf[i] = r.x;
+		ret.yf[i] = r.y;
+		ret.zf[i] = r.z;
+	}
+	return ret;	
+}
+
+struct perlin {
+
+	f32 floats[256] = {};
+	i32 x_perm[256] = {}, y_perm[256] = {}, z_perm[256] = {};
+
+	void init() {
+		for(i32 i = 0; i  < 256; i++) {
+			floats[i] = randomf();
+			x_perm[i] = y_perm[i] = z_perm[i] = i;
+		}
+		for(i32 i = 255; i > 0; i--) {
+			i32 locx = i32(randomf() * (i + 1));
+			i32 locy = i32(randomf() * (i + 1));
+			i32 locz = i32(randomf() * (i + 1));
+			
+			i32 tmp = x_perm[i];
+			x_perm[i] = x_perm[locx];
+			x_perm[locx] = tmp;
+
+			tmp = y_perm[i];
+			y_perm[i] = y_perm[locy];
+			y_perm[locx] = tmp;
+
+			tmp = z_perm[i];
+			z_perm[i] = z_perm[locz];
+			z_perm[locz] = tmp;
+		}
+	}
+
+	f32 noise(v3 pos) const {
+		v3 uvb = fract(pos);
+		i32 i = i32(4.0f * pos.x) & 0xff;
+		i32 j = i32(4.0f * pos.y) & 0xff;
+		i32 k = i32(4.0f * pos.z) & 0xff;
+		return floats[x_perm[i] ^ y_perm[j] ^ z_perm[k]];
+	}
+};
 
 #ifdef MATH_IMPLEMENTAITON
 
