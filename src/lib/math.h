@@ -879,7 +879,7 @@ struct perlin {
 	}
 };
 
-#ifdef MATH_IMPLEMENTAITON
+#ifdef MATH_IMPLEMENTATION
 
 rand_state __state;
 

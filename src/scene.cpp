@@ -196,9 +196,8 @@ object noise_scene::init(f32, f32) {
 
 	mats.clear();
 
-	// TODO(max): what????????
-	texture::noise();
-	lamb = mats.add(material::lambertian(texture::noise()));
+	texture t = texture::noise();
+	lamb = mats.add(material::lambertian(t));
 
 	vec<object> objs;
 

@@ -1,5 +1,5 @@
 
-#define MATH_IMPLEMENTAITON
+#define MATH_IMPLEMENTATION
 #include "math.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
