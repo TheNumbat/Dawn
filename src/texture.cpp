@@ -31,12 +31,14 @@ v3 checkerboard::sample(f32 u, f32 v, v3 p) const {
 	return even->sample(u,v,p);
 }
 
-pnoise pnoise::make() {
+pnoise pnoise::make(v3 loc, f32 scale) {
 	pnoise ret;
-	ret.noise.init();
+	ret.scale = scale;
+	ret.loc = loc;
 	return ret;
 }
 
 v3 pnoise::sample(f32, f32, v3 p) const {
-	return noise.noise(p);
+	p += loc;
+	return 0.5f * (1.0f + sin(scale * p.x + 10.0f * g_perlin.turb(p, 7)));
 }

@@ -361,18 +361,61 @@ inline v3 VEC lerp(const v3 min, const v3 max, f32 dist) {
 inline v3 VEC floor(const v3 v) {
 	return {_mm_floor_ps(v.v)};
 }
-inline v3 VEC fract(const v3 v) {
+inline v3 VEC afract(const v3 v) {
 	return v - floor(v);
 }
+inline v3 VEC abs(const v3 v) {
+	return {fabsf(v.x),fabsf(v.y),fabsf(v.z)};
+}
 
+inline f32 minf(f32 l, f32 r) {
+	return l < r ? l : r;
+}
+inline f32 maxf(f32 l, f32 r) {
+	return l > r ? l : r;
+}
 inline f32 lerp(f32 min, f32 max, f32 dist) {
 	return (max - min) * dist + min;
+}
+inline f32 clamp(f32 f, f32 min, f32 max) {
+	return maxf(minf(f, max), min);
 }
 inline f32 safe(f32 f) {
 	return isnan(f) ? 0.0f : f;
 }
 inline v3 safe(const v3 v) {
 	return (isnan(v.x) || isnan(v.y) || isnan(v.z)) ? v3{} : v;
+}
+
+inline f32 VEC trilerp(f32 vals[2][2][2], v3 uvw) {
+	f32 accum = 0.0f;
+	for(i32 i = 0; i < 2; i++) {
+		for(i32 j = 0; j < 2; j++) {
+			for(i32 k = 0; k < 2; k++) {
+				accum += (i*uvw.x + (1-i)*(1-uvw.x))*
+						 (j*uvw.y + (1-j)*(1-uvw.y))*
+						 (k*uvw.z + (1-k)*(1-uvw.z))*
+						  vals[i][j][k];
+			}
+		}
+	}
+	return accum;
+}
+inline f32 VEC trilerp(v3 vals[2][2][2], v3 uvw) {
+	f32 accum = 0.0f;
+	v3 sm = uvw * uvw * (3.0f - 2.0f * uvw); // Smoothed
+	for(i32 i = 0; i < 2; i++) {
+		for(i32 j = 0; j < 2; j++) {
+			for(i32 k = 0; k < 2; k++) {
+				v3 weight = uvw - v3(i,j,k);
+				accum += (i*sm.x + (1-i)*(1-sm.x))*
+						 (j*sm.y + (1-j)*(1-sm.y))*
+						 (k*sm.z + (1-k)*(1-sm.z))*
+						 dot(vals[i][j][k], weight);
+			}
+		}
+	}
+	return accum;
 }
 
 inline v3_lane VEC operator+(const v3_lane& l, const v3_lane& r) {
@@ -797,6 +840,9 @@ inline u32 randomu() {
 inline f32 randomf() {
 	return (f32)randomu() / UINT32_MAX;
 }
+inline v3 VEC randomvec() {
+	return {2.0f * randomf() - 1.0f, 2.0f * randomf() - 1.0f, 2.0f * randomf() - 1.0f};
+}
 inline v3 random_leunit() {
 	v3 v;
 	do {
@@ -843,12 +889,13 @@ inline v3_lane random_ledisk_lane() {
 
 struct perlin {
 
-	f32 floats[256] = {};
+	v3 vecs[256] = {};
 	i32 x_perm[256] = {}, y_perm[256] = {}, z_perm[256] = {};
 
+	// NOTE(max): needs to be initialized after the rand state
 	void init() {
 		for(i32 i = 0; i < 256; i++) {
-			floats[i] = randomf();
+			vecs[i] = norm(randomvec());
 			x_perm[i] = y_perm[i] = z_perm[i] = i;
 		}
 		for(i32 i = 255; i > 0; i--) {
@@ -870,17 +917,41 @@ struct perlin {
 		}
 	}
 
-	f32 noise(v3 pos) const {
-		v3 uvb = fract(pos);
-		i32 i = i32(4.0f * pos.x) & 0xff;
-		i32 j = i32(4.0f * pos.y) & 0xff;
-		i32 k = i32(4.0f * pos.z) & 0xff;
-		return floats[x_perm[i] ^ y_perm[j] ^ z_perm[k]];
+	f32 trilerp(v3 pos) const {
+
+		v3 uvw = afract(pos);
+		i32 i = (i32)floor(pos.x);
+		i32 j = (i32)floor(pos.y);
+		i32 k = (i32)floor(pos.z);
+		v3 vals[2][2][2];
+		for(i32 di = 0; di < 2; di++) {
+			for(i32 dj = 0; dj < 2; dj++) {
+				for(i32 dk = 0; dk < 2; dk++) {
+					vals[di][dj][dk] = vecs[x_perm[(i+di) & 0xff] ^ 
+											y_perm[(j+dj) & 0xff] ^ 
+											z_perm[(k+dk) & 0xff]];
+				}
+			}
+		}
+		return ::trilerp(vals, uvw);
+	}
+
+	f32 turb(v3 pos, i32 depth) const {
+
+		f32 accum = 0.0f, weight = 1.0f;
+		for(i32 i = 0; i < depth; i++) {
+			accum += weight * trilerp(pos);
+			weight *= 0.5f;
+			pos *= 2.0f;
+		}
+		return accum;
 	}
 };
+extern perlin g_perlin;
 
 #ifdef MATH_IMPLEMENTATION
 
+perlin g_perlin;
 rand_state __state;
 
 std::ostream& operator<<(std::ostream& out, const v3 r) {

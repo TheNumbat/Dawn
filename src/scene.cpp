@@ -50,6 +50,8 @@ scene::~scene() {
 }
 
 void scene::init(i32 w, i32 h) {
+
+	g_perlin.init();
 	cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f, 0.0f, 1.0f);
 
 	scene_obj = def.init(cam.start_time, cam.end_time);
@@ -196,8 +198,7 @@ object noise_scene::init(f32, f32) {
 
 	mats.clear();
 
-	texture t = texture::noise();
-	lamb = mats.add(material::lambertian(t));
+	lamb = mats.add(material::lambertian(texture::noise(v3(), 4.0f)));
 
 	vec<object> objs;
 

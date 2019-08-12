@@ -59,7 +59,7 @@ private:
 			leaf
 		};
 
-		static i32 populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
+		static i16 populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 							f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf);
 
 		aabb box_;
@@ -67,10 +67,10 @@ private:
 
 		// NOTE(max): note-> both populated with bvh::nodes, leaf-> left populated with object, right ignored 
 		// (leaves just wrap single objects)
-		i32 left = 0, right = 0, parent = 0;
+		i16 left = 0, right = 0, parent = 0;
 	};
 
-	i32 root = -1;
+	i16 root = -1;
 	vec<object> objects;
 	vec<node> nodes;
 };

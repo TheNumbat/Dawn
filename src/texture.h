@@ -36,13 +36,14 @@ private:
 
 struct pnoise {
 
-	static pnoise make();
+	static pnoise make(v3 loc, f32 scale);
 	void destroy() {}
 
 	v3 sample(f32 u, f32 v, v3 p) const;
 
 private:
-	perlin noise;
+	f32 scale = 1.0f;
+	v3 loc;
 };
 
 struct texture {
@@ -64,10 +65,10 @@ struct texture {
 		ret.cb = checkerboard::make(odd, even);
 		return ret;
 	}
-	static texture noise() {
+	static texture noise(v3 loc, f32 scale) {
 		texture ret;
 		ret.type = tex::noise;
-		ret.n = pnoise::make();
+		ret.n = pnoise::make(loc, scale);
 		return ret;
 	}
 	v3 sample(f32 u, f32 v, v3 p) const {

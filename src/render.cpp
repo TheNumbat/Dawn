@@ -16,12 +16,11 @@ bool render_thread(thread_data data) {
 			}
 
 			col /= (f32)data.s;
+			u8 r = (u8)(clamp(col.x, 0.0f, 1.0f) * 255.0f);
+			u8 g = (u8)(clamp(col.y, 0.0f, 1.0f) * 255.0f);
+			u8 b = (u8)(clamp(col.z, 0.0f, 1.0f) * 255.0f);
 
-			data.data[y * data.total_w + x] = 
-				(0xff << 24)                 | 
-			   ((u32)(255.0f * col.z) << 16) |
-			   ((u32)(255.0f * col.y) << 8)  |
-				(u32)(255.0f * col.x);
+			data.data[y * data.total_w + x] = (0xff << 24) | (b << 16) | (g << 8) | r;
 		}
 	}
 

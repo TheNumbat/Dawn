@@ -14,7 +14,7 @@ trace trace::min(const trace& l, const trace& r) {
 	return {};
 }
 
-i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
+i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 						f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 
 	i32 axis = (i32)(randomf() * 3.0f);
@@ -28,14 +28,14 @@ i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 
 	node ret;
 
-	assert(!list.empty());
+	assert(!list.empty() && list.size < UINT16_MAX);
 
 	if(list.size <= leaf_span) {
 
 		ret.type_ = type::leaf;
 
 		objs.push(create_leaf(list));
-		ret.left = objs.size - 1;
+		ret.left = (i16)(objs.size - 1);
 		ret.box_ = objs[ret.left].box(tmin, tmax);
 
 		nodes.push(ret);
@@ -51,11 +51,11 @@ i32 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 		ret.box_ = aabb::enclose(nodes[ret.left].box_, nodes[ret.right].box_);
 
 		nodes.push(ret);
-		nodes[ret.left].parent = nodes.size - 1;
-		nodes[ret.right].parent = nodes.size - 1;
+		nodes[ret.left].parent = (i16)(nodes.size - 1);
+		nodes[ret.right].parent = (i16)(nodes.size - 1);
 	}
 
-	return nodes.size - 1;
+	return (i16)(nodes.size - 1);
 }
 
 bvh bvh::make(const vec<object>& objs, f32 tmin, f32 tmax) {
