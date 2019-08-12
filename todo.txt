@@ -1,9 +1,11 @@
 TODO:
 
-raytracing the next week: page 22
-	texture::noise has a problem
-	maybe move camera into scene definition
-	break out scene definitions into it's own files; prep for model/scene loading
+raytracing the next week: page 30
+	finish sphere uv
+	v2_lane and sphere_lane mapping/uv
+
+maybe move camera into scene definition
+break out scene definitions into it's own files; prep for model/scene loading
 
 start PBRT book
 HDR and tone-mapping

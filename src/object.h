@@ -80,6 +80,9 @@ struct sphere {
 	static sphere make(v3 p, f32 r, i32 m);
 	void destroy() {}
 
+	static v2 map(v3 pos);
+	v2 uv(v3 pos);
+
 	aabb box(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 

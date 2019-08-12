@@ -214,6 +214,18 @@ bool aabb::hit(const ray& r, v2 t) const {
 	return true;
 }
 
+v2 sphere::map(v3 pos) {
+
+	f32 phi = atan2(pos.z, pos.x);
+	f32 theta = asin(pos.y);
+	return {1.0f - (phi + PI32) / TAU32, theta + (PI32 / 2.0f) / PI32};
+}
+
+v2 sphere::uv(v3 pos) {
+	assert(false);
+	return {};
+}
+
 sphere sphere::make(v3 p, f32 r, i32 m) {
 	sphere ret;
 	ret.pos = p;
