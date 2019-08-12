@@ -12,7 +12,7 @@ bool render_thread(thread_data data) {
 			v3 col;
 
 			for(i32 s = 0; s < data.s; s++) {
-				col += data.sc->sample(u,v);	
+				col += data.sc->sample({u,v});	
 			}
 
 			col /= (f32)data.s;

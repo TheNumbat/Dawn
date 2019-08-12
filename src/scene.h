@@ -13,12 +13,13 @@ struct camera {
 	f32 ar = 0.0f;
 	i32 wid = 0, hei = 0;
 	
-	f32 fov = 0.0f, aperture = 0.0f, start_time = 0.0f, end_time = 0.0f;
+	f32 fov = 0.0f, aperture = 0.0f;
+	v2 time;
 
-	void init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 s, f32 d);
+	void init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, v2 t);
 	void update();
 
-	ray get_ray(f32 u, f32 v, f32 jitx, f32 jity) const;
+	ray get_ray(v2 uv, v2 jit) const;
 
 private:
 	v3 forward, right, up;
@@ -27,7 +28,7 @@ private:
 
 struct random_bvh_scene {
 	
-	object init(f32 tmin, f32 tmax);
+	object init(v2 t);
 	void destroy();
 	material* get(i32 idx) const;
 
@@ -39,7 +40,7 @@ private:
 
 struct basic_scene {
 	
-	object init(f32 tmin, f32 tmax);
+	object init(v2 t);
 	void destroy() {}
 	material* get(i32 idx) const;
 
@@ -50,7 +51,7 @@ private:
 
 struct noise_scene {
 	
-	object init(f32 tmin, f32 tmax);
+	object init(v2 t);
 	void destroy() {}
 	material* get(i32 idx) const;
 
@@ -66,7 +67,7 @@ struct scene {
 	~scene();
 
 	v3 compute(const ray& into) const;
-	v3 sample(f32 u, f32 v) const;
+	v3 sample(v2 uv) const;
 
 private:
 	object scene_obj;

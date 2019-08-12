@@ -102,6 +102,33 @@ union v3 {
 };
 static_assert(sizeof(v3) == 16, "sizeof(v3) != 16");
 
+union v2 {
+	struct {
+		f32 x, y;
+	};
+	f32 a[2] = {};
+
+	void operator+=(const v2 o) {x += o.x; y += o.y;}
+	void operator-=(const v2 o) {x -= o.x; y -= o.y;}
+	void operator*=(const v2 o) {x *= o.x; y *= o.y;}
+	void operator/=(const v2 o) {x /= o.x; y /= o.y;}
+	void operator*=(f32 s) {x *= s; y *= s;}
+	void operator/=(f32 s) {x /= s; y /= s;}
+	f32& operator[](i32 idx) {return a[idx];}
+	f32 operator[](i32 idx) const {return a[idx];}
+	v2 operator-() const {return {-x,-y};}
+
+	v2() {}
+	v2(f32 _x) {x = _x; y = _x;}
+	v2(f32 _x, f32 _y) {x = _x; y = _y;}
+	v2(i32 _x, i32 _y) {x = (f32)_x; y = (f32)_y;}
+	v2(const v2& o) {x = o.x; y = o.y;}
+	v2(const v2&& o) {x = o.x; y = o.y;}
+	v2& operator=(const v2& o) {x = o.x; y = o.y; return *this;}
+	v2& operator=(const v2&& o) {x = o.x; y = o.y; return *this;}
+};
+static_assert(sizeof(v3) == 16, "sizeof(v3) != 16");
+
 union f32_lane {
 	__lane v;
 	i32 i[LANE_WIDTH];
@@ -242,6 +269,49 @@ std::ostream& operator<<(std::ostream& out, const v3 r);
 std::ostream& VEC operator<<(std::ostream& out, const v3_lane& r);
 std::ostream& VEC operator<<(std::ostream& out, const f32_lane& r);
 void test_math();
+
+inline v2 operator+(const v2 l, const v2 r) {
+	return {l.x + r.x, l.y + r.y};
+}
+inline v2 operator+(const v2 l, const f32 r) {
+	return {l.x + r, l.y + r};
+}
+inline v2 operator+(const f32 l, const v2 r) {
+	return {l + r.x, l + r.y};
+}
+inline v2 operator-(const v2 l, const v2 r) {
+	return {l.x - r.x, l.y - r.y};
+}
+inline v2 operator-(const v2 l, const f32 r) {
+	return {l.x - r, l.y - r};
+}
+inline v2 operator-(const f32 l, const v2 r) {
+	return {l - r.x, l - r.y};
+}
+inline v2 operator*(const v2 l, const v2 r) {
+	return {l.x * r.x, l.y * r.y};
+}
+inline v2 operator*(const v2 l, const f32 r) {
+	return {l.x * r, l.y * r};
+}
+inline v2 operator*(const f32 l, const v2 r) {
+	return {l * r.x, l * r.y};
+}
+inline v2 operator/(const v2 l, const v2 r) {
+	return {l.x / r.x, l.y / r.y};
+}
+inline v2 operator/(const v2 l, const f32 r) {
+	return {l.x / r, l.y / r};
+}
+inline v2 operator/(const f32 l, const v2 r) {
+	return {l / r.x, l / r.y};
+}
+inline bool operator==(const v2 l, const v2 r) {
+	return l.x == r.x && l.y == r.y;
+}
+inline bool operator!=(const v2 l, const v2 r) {
+	return l.x != r.x || l.y != r.y;
+}
 
 inline v3 VEC operator+(const v3 l, const v3 r) {
 	return {_mm_add_ps(l.v,r.v)};

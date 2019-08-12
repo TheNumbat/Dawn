@@ -32,18 +32,18 @@ struct aabb {
 	v3 min, max;
 
 	static aabb enclose(const aabb& l, const aabb& r);
-	bool hit(const ray& incoming, f32 tmin, f32 tmax) const;
+	bool hit(const ray& incoming, v2 t) const;
 };
 
 struct bvh {
 
-	static bvh make(const vec<object>& objs, f32 tmin, f32 tmax);
-	static bvh make(const vec<object>& objs, f32 tmin, f32 tmax, i32 leaf_span,
+	static bvh make(const vec<object>& objs, v2 t);
+	static bvh make(const vec<object>& objs, v2 t, i32 leaf_span,
 					std::function<object(vec<object>)> create_leaf);
 	void destroy();
 
-	aabb box(f32 tmin, f32 tmax) const;
-	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+	aabb box(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
 
 private:
 
@@ -60,7 +60,7 @@ private:
 		};
 
 		static i16 populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
-							f32 tmin, f32 tmax, i32 leaf_span, std::function<object(vec<object>)> create_leaf);
+							v2 t, i32 leaf_span, std::function<object(vec<object>)> create_leaf);
 
 		aabb box_;
 		type type_ = type::node;
@@ -80,8 +80,8 @@ struct sphere {
 	static sphere make(v3 p, f32 r, i32 m);
 	void destroy() {}
 
-	aabb box(f32 tmin, f32 tmax) const;
-	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+	aabb box(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
 
 private:
 	v3 pos;
@@ -93,17 +93,17 @@ private:
 
 struct sphere_moving {
 
-	static sphere_moving make(v3 p0, v3 p1, f32 r, i32 m, f32 t0, f32 t1);
+	static sphere_moving make(v3 p0, v3 p1, f32 r, i32 m, v2 t);
 	void destroy() {}
 
-	aabb box(f32 t0, f32 t1) const;
-	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+	aabb box(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
 
 private:
 	v3 pos0, pos1;
 	f32 rad = 0.0f;
 	i32 mat = 0;
-	f32 start = 0.0f, duration = 0.0f;
+	v2 t;
 };
 
 struct sphere_lane {
@@ -111,8 +111,8 @@ struct sphere_lane {
 	static sphere_lane make(v3_lane p, f32_lane r, f32_lane m);
 	void destroy() {}
 
-	aabb box(f32 t0, f32 t1) const;
-	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+	aabb box(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
 
 private:
 	v3_lane pos;
@@ -126,8 +126,8 @@ struct object_list {
 	static object_list make(vec<object>& objs);
 	void destroy();
 
-	aabb box(f32 t0, f32 t1) const;
-	trace hit(const ray& r, f32 tmin, f32 tmax) const;
+	aabb box(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
 
 private:
 	vec<object> objects;
@@ -150,17 +150,17 @@ struct object {
 		ret.l = object_list::make(objs);
 		return ret;
 	}
-	static object bvh(vec<object> objs, f32 tmin, f32 tmax) {
+	static object bvh(vec<object> objs, v2 t) {
 		object ret;
 		ret.type = obj::bvh;
-		ret.b = bvh::make(objs, tmin, tmax);
+		ret.b = bvh::make(objs, t);
 		return ret;
 	}
-	static object bvh(vec<object> objs, f32 tmin, f32 tmax, 
+	static object bvh(vec<object> objs, v2 t, 
 					  i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 		object ret;
 		ret.type = obj::bvh;
-		ret.b = bvh::make(objs, tmin, tmax, leaf_span, create_leaf);
+		ret.b = bvh::make(objs, t, leaf_span, create_leaf);
 		return ret;
 	}
 	static object sphere(i32 mat, v3 pos, f32 rad) {
@@ -169,10 +169,10 @@ struct object {
 		ret.s = sphere::make(pos, rad, mat);
 		return ret;
 	}
-	static object sphere_moving(i32 mat, v3 pos0, v3 pos1, f32 rad, f32 t0, f32 t1) {
+	static object sphere_moving(i32 mat, v3 pos0, v3 pos1, f32 rad, v2 t) {
 		object ret;
 		ret.type = obj::sphere_moving;
-		ret.sm = sphere_moving::make(pos0,pos1,rad,mat,t0,t1);
+		ret.sm = sphere_moving::make(pos0,pos1,rad,mat,t);
 		return ret;
 	}
 	static object sphere_lane(const f32_lane& mat, const v3_lane& pos, const f32_lane& rad) {
@@ -181,24 +181,24 @@ struct object {
 		ret.sl = sphere_lane::make(pos,rad,mat);
 		return ret;
 	}
-	trace hit(const ray& r, f32 tmin, f32 tmax) const {
+	trace hit(const ray& r, v2 t) const {
 		switch(type) {
-		case obj::bvh: return b.hit(r, tmin, tmax);
-		case obj::list: return l.hit(r, tmin, tmax);
-		case obj::sphere: return s.hit(r, tmin, tmax);
-		case obj::sphere_lane: return sl.hit(r, tmin, tmax);
-		case obj::sphere_moving: return sm.hit(r, tmin, tmax);
+		case obj::bvh: return b.hit(r, t);
+		case obj::list: return l.hit(r, t);
+		case obj::sphere: return s.hit(r, t);
+		case obj::sphere_lane: return sl.hit(r, t);
+		case obj::sphere_moving: return sm.hit(r, t);
 		default: assert(false);
 		}
 		return {};
 	}
-	aabb box(f32 t0, f32 t1) const {
+	aabb box(v2 t) const {
 		switch(type) {
-		case obj::bvh: return b.box(t0, t1);
-		case obj::list: return l.box(t0, t1);
-		case obj::sphere: return s.box(t0, t1);
-		case obj::sphere_lane: return sl.box(t0, t1);
-		case obj::sphere_moving: return sm.box(t0, t1);
+		case obj::bvh: return b.box(t);
+		case obj::list: return l.box(t);
+		case obj::sphere: return s.box(t);
+		case obj::sphere_lane: return sl.box(t);
+		case obj::sphere_moving: return sm.box(t);
 		default: assert(false);
 		}
 		return {};

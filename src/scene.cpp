@@ -2,12 +2,11 @@
 #include "scene.h"
 #include "lib/vec.h"
 
-void camera::init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, f32 t0, f32 t1) {
+void camera::init(v3 p, v3 l, i32 w, i32 h, f32 f, f32 ap, v2 t) {
 	wid = w;
 	hei = h;
 	pos = p;
-	start_time = t0;
-	end_time = t1;
+	time = t;
 	aperture = ap / 2.0f;
 	look = l;
 	fov = RADIANS(f);
@@ -33,16 +32,16 @@ void camera::update() {
 	vert_step = -2.0f*half_h*focus*up;
 }
 
-ray camera::get_ray(f32 u, f32 v, f32 jitx, f32 jity) const {
+ray camera::get_ray(v2 uv, v2 jit) const {
 	
-	jitx /= (f32)wid;
-	jity /= (f32)hei;
-	u += jitx; v += jity;
+	jit.x /= (f32)wid;
+	jit.y /= (f32)hei;
+	uv += jit;
 
-	f32 time = lerp(start_time, end_time, randomf());
+	f32 ray_time = lerp(time.x, time.y, randomf());
 	v3 lens_pos = aperture * random_ledisk();
 	v3 offset = pos + right * lens_pos.x + up * lens_pos.y;
-	return {offset, lower_left + u*horz_step + v*vert_step - offset, time};
+	return {offset, lower_left + uv.x*horz_step + uv.y*vert_step - offset, ray_time};
 }
 
 scene::~scene() {
@@ -52,9 +51,9 @@ scene::~scene() {
 void scene::init(i32 w, i32 h) {
 
 	g_perlin.init();
-	cam.init(v3(13.0f,2.0f,3.0f), {}, w, h, 60.0f, 0.1f, 0.0f, 1.0f);
+	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
 
-	scene_obj = def.init(cam.start_time, cam.end_time);
+	scene_obj = def.init(cam.time);
 }
 
 void scene::destroy() {
@@ -71,7 +70,7 @@ v3 scene::compute(const ray& r_) const {
 	
 	while(depth < max_depth) {
 		
-		trace t = scene_obj.hit(r, 0.001f, FLT_MAX);
+		trace t = scene_obj.hit(r, v2(0.001f, FLT_MAX));
 		if(t.hit) {
 
 			scatter s = def.get(t.mat)->bsdf(r, t);
@@ -88,7 +87,7 @@ v3 scene::compute(const ray& r_) const {
 
 			v3 unit = norm(r.dir);
 			f32 fade = 0.5f * (unit.y + 1.0f);
-			accum *= lerp(v3(0.5f,0.7f,1.0f), v3(1.0f), fade);
+			accum *= lerp({0.5f, 0.7f, 1.0f}, {1.0f}, fade);
 			break;
 		}
 
@@ -98,10 +97,10 @@ v3 scene::compute(const ray& r_) const {
 	return accum;
 }
 
-v3 scene::sample(f32 u, f32 v) const {
+v3 scene::sample(v2 uv) const {
 		
-	f32 jitx = randomf(), jity = randomf();
-	ray r = cam.get_ray(u,v, jitx,jity);
+	v2 jit = {randomf(), randomf()};
+	ray r = cam.get_ray(uv, jit);
 		
 	v3 result = safe(compute(r));
 
@@ -109,7 +108,7 @@ v3 scene::sample(f32 u, f32 v) const {
 	return pow(result, 1.0f / 2.2f);
 }
 
-object random_bvh_scene::init(f32 tmin, f32 tmax) {
+object random_bvh_scene::init(v2 t) {
 	
 	mats.clear();
 
@@ -146,7 +145,7 @@ object random_bvh_scene::init(f32 tmin, f32 tmax) {
 		}
 	}
 
-	object ret = object::bvh(objs, tmin, tmax, LANE_WIDTH, [](vec<object> list) -> object {
+	object ret = object::bvh(objs, t, LANE_WIDTH, [](vec<object> list) -> object {
 
 		sphere_lane_builder builder;
 
@@ -171,7 +170,7 @@ material* random_bvh_scene::get(i32 idx) const {
 	return mats.get(idx);
 }
 
-object basic_scene::init(f32, f32) {
+object basic_scene::init(v2) {
 
 	mats.clear();
 
@@ -194,7 +193,7 @@ material* basic_scene::get(i32 idx) const {
 	return mats.get(idx);
 }
 
-object noise_scene::init(f32, f32) {
+object noise_scene::init(v2) {
 
 	mats.clear();
 
