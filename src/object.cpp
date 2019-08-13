@@ -50,6 +50,7 @@ i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 		ret.right = populate(split.r, objs, nodes, t, leaf_span, create_leaf);
 		ret.box_ = aabb::enclose(nodes[ret.left].box_, nodes[ret.right].box_);
 
+		// TODO(max): can we make this a complete tree with implicit parent/children position?
 		nodes.push(ret);
 		nodes[ret.left].parent = (i16)(nodes.size - 1);
 		nodes[ret.right].parent = (i16)(nodes.size - 1);
@@ -218,12 +219,11 @@ v2 sphere::map(v3 pos) {
 
 	f32 phi = atan2(pos.z, pos.x);
 	f32 theta = asin(pos.y);
-	return {1.0f - (phi + PI32) / TAU32, theta + (PI32 / 2.0f) / PI32};
+	return {1.0f - (phi + PI32) / TAU32, (theta + PI32 / 2.0f) / PI32};
 }
 
-v2 sphere::uv(v3 pos) {
-	assert(false);
-	return {};
+v2 sphere::uv(const trace& info) const {
+	return map((pos - info.pos) / rad);
 }
 
 sphere sphere::make(v3 p, f32 r, i32 m) {
@@ -258,6 +258,7 @@ trace sphere::hit(const ray& r, v2 t) const {
 		ret.t = result;
 		ret.pos = r.get(result);
 		ret.normal = (ret.pos - pos) / rad;
+		ret.uv = map(-ret.normal);
 		return ret;
 	} 
 	
@@ -268,6 +269,7 @@ trace sphere::hit(const ray& r, v2 t) const {
 		ret.t = result;
 		ret.pos = r.get(result);
 		ret.normal = (ret.pos - pos) / rad;
+		ret.uv = map(-ret.normal);
 	}
 	return ret;
 }
@@ -278,22 +280,32 @@ sphere_moving sphere_moving::make(v3 p0, v3 p1, f32 r, i32 m, v2 t) {
 	ret.pos1 = p1;
 	ret.rad  = r;
 	ret.mat  = m;
-	ret.t.x = t.x;
-	ret.t.y = t.y - t.x;
+	ret.time.x = t.x;
+	ret.time.y = t.y - t.x;
 	return ret;
 }
 
-aabb sphere_moving::box(v2 _t) const {
-	v3 p0 = lerp(pos0, pos1, (_t.x - t.x) / t.y);
-	v3 p1 = lerp(pos0, pos1, (_t.y - t.x) / t.y);
-	return aabb::enclose(sphere::make(p0,rad,mat).box(_t),sphere::make(p1,rad,mat).box(_t));
+v3 sphere_moving::center(f32 t) const {
+
+	f32 dist = clamp((t - time.x) / time.y, 0.0f, 1.0f);
+	return lerp(pos0, pos1, dist);
 }
 
-trace sphere_moving::hit(const ray& r, v2 _t) const {
+v2 sphere_moving::uv(const trace& info) const {
+	
+	return sphere::map((center(info.t) - info.pos) / rad);
+}
 
-	v3 pos = lerp(pos0, pos1, (r.t - t.x) / t.y);
-	sphere s = sphere::make(pos, rad, mat);
-	return s.hit(r, _t);
+aabb sphere_moving::box(v2 t) const {
+
+	return aabb::enclose(sphere::make(center(t.x),rad,mat).box(t),
+						 sphere::make(center(t.y),rad,mat).box(t));
+}
+
+trace sphere_moving::hit(const ray& r, v2 t) const {
+
+	sphere s = sphere::make(center(r.t), rad, mat);
+	return s.hit(r, t);
 }	
 
 sphere_lane sphere_lane::make(v3_lane p, f32_lane r, f32_lane m) {
@@ -350,6 +362,7 @@ trace sphere_lane::hit(const ray& r, v2 t) const {
 		}
 	}
 	ret.normal = (ret.pos - pos[idx]) / rad.f[idx];
+	ret.uv = sphere::map(-ret.normal);
 	ret.mat = mat.i[idx];
 
 	return ret;

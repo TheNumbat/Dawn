@@ -11,7 +11,7 @@ scatter lambertian::bsdf(const ray& incoming, const trace& surface) const {
 	scatter ret;
 	v3 out = surface.pos + surface.normal + random_leunit();
 	ret.out = {surface.pos, out - surface.pos, incoming.t};
-	ret.attenuation = tex.sample(0.0f, 0.0f, surface.pos);
+	ret.attenuation = tex.sample(surface.uv, surface.pos);
 	return ret;
 }
 

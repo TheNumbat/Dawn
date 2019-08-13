@@ -1,18 +1,31 @@
 TODO:
 
-raytracing the next week: page 30
-	finish sphere uv
-	v2_lane and sphere_lane mapping/uv
+Resources
+	raytracing the next week: page 30
+		v2_lane and sphere_lane mapping/uv
+		
+	start PBRT book
+	raytracing the rest of your life
 
-maybe move camera into scene definition
-break out scene definitions into it's own files; prep for model/scene loading
+Images
+	texture types (float)
+	texture handling/filtering
+	transparency
+	HDR and tone-mapping
+	environment map / custom sky definitions
 
-start PBRT book
-HDR and tone-mapping
-progressive rendering
+Features
+	progressive rendering
+	importance sampling
+	first-hit rasterization
+	GPU compute/RTX path?
+	break out scene definitions into it's own files; prep for model/scene loading
 
-Optimizations To-Do:
-	General:
+Refactoring
+	maybe move camera into scene definition
+
+Optimizations
+	General
 		don't calculate position + normal for each nearer object, instead store object ID
 		  and calculate after we have found the nearest object.
 
@@ -20,12 +33,6 @@ Optimizations To-Do:
 			cache boxes on all objects?
 
 		SIMD
-			lane-aware BVH, have leaves potentially contain LANE_WIDTH objects?
-				pass to callback function to coalesce to object?
-				this would make us have a BVH per object type, which isn't ideal, but
-				could be worth it? of course, we can also just say you have to build
-				sphere_lanes with specially near spheres and submit them as normal 
-				objects to the BVH
 			sphere_moving_lane
 			aabb_lane
 
@@ -33,10 +40,6 @@ Optimizations To-Do:
 	
 	math_simd.h:
 		compare with and without constant refs
-
-	importance sampling
-	first-hit rasterization
-	GPU compute/RTX path?
 
 Performance: 640x480x128 - Random Scene - Debug-Optimized Build
 	

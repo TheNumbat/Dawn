@@ -70,14 +70,13 @@ v3 scene::compute(const ray& r_) const {
 	
 	while(depth < max_depth) {
 		
-		trace t = scene_obj.hit(r, v2(0.001f, FLT_MAX));
+		trace t = scene_obj.hit(r, {0.001f, FLT_MAX});
 		if(t.hit) {
 
-			scatter s = def.get(t.mat)->bsdf(r, t);
+			scatter s = def.mats.get(t.mat)->bsdf(r, t);
 
 			if(s.absorbed) {
-				accum *= v3{}; 
-				break;
+				return {};
 			} else {
 				accum *= s.attenuation;
 				r = s.out;
@@ -87,14 +86,13 @@ v3 scene::compute(const ray& r_) const {
 
 			v3 unit = norm(r.dir);
 			f32 fade = 0.5f * (unit.y + 1.0f);
-			accum *= lerp({0.5f, 0.7f, 1.0f}, {1.0f}, fade);
-			break;
+			return accum * lerp({0.5f, 0.7f, 1.0f}, {1.0f}, fade);
 		}
 
 		depth++;
 	}
 
-	return accum;
+	return {};
 }
 
 v3 scene::sample(v2 uv) const {
@@ -112,33 +110,48 @@ object random_bvh_scene::init(v2 t) {
 	
 	mats.clear();
 
-	even = texture::constant(v3(0.2f, 0.3f, 0.1f));
-	odd = texture::constant(v3(0.9f));
+	even = texture::constant({0.2f, 0.3f, 0.1f});
+	odd = texture::constant({0.9f});
 	lamb0 = mats.add(material::lambertian(texture::checkerboard(&even, &odd)));
-	lamb1 = mats.add(material::lambertian(texture::constant(v3(0.4f, 0.2f, 0.1f))));
-	met0 = mats.add(material::metal(v3(0.7f, 0.6f, 0.5f), 0.0f));
+	lamb1 = mats.add(material::lambertian(texture::constant({0.4f, 0.2f, 0.1f})));
+	met0 = mats.add(material::metal({0.7f, 0.6f, 0.5f}, 0.0f));
 	dia0 = mats.add(material::dielectric(1.5f));
 
 	vec<object> objs;
 
-	objs.push(object::sphere(lamb0, v3(0.0f, -1000.0f, 0.0f), 1000.0f));
-	objs.push(object::sphere(dia0, v3(0.0f, 1.0f, 0.0f), 1.0f));
-	objs.push(object::sphere(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0f));
-	objs.push(object::sphere(met0, v3(4.0f, 1.0f, 0.0f), 1.0f));
+	objs.push(object::sphere(lamb0, {0.0f, -1000.0f, 0.0f}, 1000.0f));
+	objs.push(object::sphere(dia0, {0.0f, 1.0f, 0.0f}, 1.0f));
+	objs.push(object::sphere(lamb1, {-4.0f, 1.0f, 0.0f}, 1.0f));
+	objs.push(object::sphere(met0, {4.0f, 1.0f, 0.0f}, 1.0f));
 
 	for (i32 a = -16; a < 16; a++) {
 		for (i32 b = -16; b < 16; b++) {
+
 			f32 choose_mat = randomf();
 			v3 center(a+0.9f*randomf(),0.2f,b+0.9f*randomf()); 
 
-			if (len(center-v3(4.0f,0.2f,0.0f)) > 0.9f) { 
+			if (len(center - v3{4.0f, 0.2f, 0.0f}) > 0.9f) { 
+
 				if (choose_mat < 0.8f) {
-					mat_id id = mats.add(material::lambertian(texture::constant(v3(randomf()*randomf(), randomf()*randomf(), randomf()*randomf()))));
+					
+					mat_id id = mats.add(material::lambertian(
+						texture::constant({randomf()*randomf(), 
+										   randomf()*randomf(), 
+										   randomf()*randomf()})));
+
 					objs.push(object::sphere(id, center, 0.2f));
+
 				} else if (choose_mat < 0.95) {
-					mat_id id = mats.add(material::metal(v3(0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf()), 0.5f*(1.0f + randomf())), 0.5f*randomf()));
+
+					mat_id id = mats.add(material::metal({0.5f * (1.0f + randomf()), 
+														  0.5f * (1.0f + randomf()), 
+														  0.5f * (1.0f + randomf())}, 
+														  0.5f*randomf()));
+					
 					objs.push(object::sphere(id, center, 0.2f));
+
 				} else {
+
 					objs.push(object::sphere(dia0, center, 0.2f));
 				}
 			}
@@ -160,53 +173,43 @@ object random_bvh_scene::init(v2 t) {
 	return ret;
 }
 
-void random_bvh_scene::destroy() {
-
-	mats.destroy();
-	lamb0 = lamb1 = met0 = dia0 = 0;
-}
-
-material* random_bvh_scene::get(i32 idx) const {
-	return mats.get(idx);
-}
-
 object basic_scene::init(v2) {
 
 	mats.clear();
 
-	lamb0 = mats.add(material::lambertian(texture::constant(v3(0.6f))));
-	lamb1 = mats.add(material::lambertian(texture::constant(v3(0.4f,0.2f,0.1f))));
-	met0 = mats.add(material::metal(v3(0.7f,0.6f,0.5f), 0.0f));
+	lamb0 = mats.add(material::lambertian(texture::constant({0.6f})));
+	lamb1 = mats.add(material::lambertian(texture::image("mars.jpg")));
+	met0 = mats.add(material::metal({0.7f, 0.6f, 0.5f}, 0.0f));
 	dia0 = mats.add(material::dielectric(1.5f));
 
-	vec<object> objs;
+	sphere_lane_builder builder;
 
-	objs.push(object::sphere(lamb0, v3(0.0f, -1000.0f, 0.0f), 1000.0f));
-	objs.push(object::sphere(dia0, v3(0.0f, 1.0f, 0.0f), 1.0f));
-	objs.push(object::sphere(lamb1, v3(-4.0f, 1.0f, 0.0f), 1.0f));
-	objs.push(object::sphere(met0, v3(4.0f, 1.0f, 0.0f), 1.0f));
+	builder.push(object::sphere(lamb0, {0.0f, -1000.0f, 0.0f}, 1000.0f));
+	builder.push(object::sphere(dia0, {0.0f, 1.0f, 0.0f}, 1.0f));
+	builder.push(object::sphere(met0, {-4.0f, 1.0f, 0.0f}, 1.0f));
+	builder.push(object::sphere(lamb1, {4.0f, 1.0f, 0.0f}, 1.0f));
 
-	return object::list(objs);
-}
-
-material* basic_scene::get(i32 idx) const {
-	return mats.get(idx);
+	return builder.finish();
 }
 
 object noise_scene::init(v2) {
 
 	mats.clear();
 
-	lamb = mats.add(material::lambertian(texture::noise(v3(), 4.0f)));
+	lamb = mats.add(material::lambertian(texture::noise({}, 4.0f)));
 
 	vec<object> objs;
 
-	objs.push(object::sphere(lamb, v3(0.0f, -1000.0f, 0.0f), 1000.0f));
-	objs.push(object::sphere(lamb, v3(0.0f, 2.0f, 0.0f), 2.0f));
+	objs.push(object::sphere(lamb, {0.0f, -1000.0f, 0.0f}, 1000.0f));
+	objs.push(object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f));
 
 	return object::list(objs);
 }
 
-material* noise_scene::get(i32 idx) const {
-	return mats.get(idx);
+object planet_scene::init(v2) {
+
+	mats.clear();
+	lamb = mats.add(material::lambertian(texture::image("mars.jpg")));
+
+	return object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f);
 }

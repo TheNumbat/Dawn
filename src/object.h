@@ -22,6 +22,8 @@ struct trace {
 	bool hit = false;
 	f32 t = 0.0f;
 	i32 mat = 0;
+	
+	v2 uv;
 	v3 pos, normal;
 
 	static trace min(const trace& l, const trace& r);
@@ -81,12 +83,14 @@ struct sphere {
 	void destroy() {}
 
 	static v2 map(v3 pos);
-	v2 uv(v3 pos);
 
 	aabb box(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
+	
+	v2 uv(const trace& info) const;
+
 	v3 pos;
 	f32 rad = 0.0f;
 	i32 mat = 0;
@@ -99,14 +103,19 @@ struct sphere_moving {
 	static sphere_moving make(v3 p0, v3 p1, f32 r, i32 m, v2 t);
 	void destroy() {}
 
+
 	aabb box(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
+
+	v2 uv(const trace& info) const;
+	v3 center(f32 t) const;
+
 	v3 pos0, pos1;
 	f32 rad = 0.0f;
 	i32 mat = 0;
-	v2 t;
+	v2 time;
 };
 
 struct sphere_lane {
@@ -118,6 +127,7 @@ struct sphere_lane {
 	trace hit(const ray& r, v2 t) const;
 
 private:
+
 	v3_lane pos;
 	f32_lane rad;
 	f32_lane mat;

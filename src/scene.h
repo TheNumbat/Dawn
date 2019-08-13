@@ -5,6 +5,52 @@
 #include "object.h"
 #include "material.h"
 
+struct random_bvh_scene {
+	
+	object init(v2 t);
+
+	void destroy() {mats.destroy();}
+	materal_cache mats;
+
+private:
+	texture even, odd;
+	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
+};
+
+struct basic_scene {
+	
+	object init(v2 t);
+
+	void destroy() {mats.destroy();}
+	materal_cache mats;
+
+private:
+	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
+};
+
+struct noise_scene {
+	
+	object init(v2 t);
+	
+	void destroy() {mats.destroy();}
+	materal_cache mats;
+
+private:
+	i32 lamb = 0;
+};
+
+struct planet_scene {
+	
+	object init(v2 t);
+	
+	void destroy() {mats.destroy();}
+	materal_cache mats;
+
+private:
+	i32 lamb = 0;
+};
+
+
 struct camera {
 
 	// params
@@ -26,40 +72,6 @@ private:
 	v3 lower_left, horz_step, vert_step;
 };
 
-struct random_bvh_scene {
-	
-	object init(v2 t);
-	void destroy();
-	material* get(i32 idx) const;
-
-private:
-	texture even, odd;
-	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
-	materal_cache mats;
-};
-
-struct basic_scene {
-	
-	object init(v2 t);
-	void destroy() {}
-	material* get(i32 idx) const;
-
-private:
-	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
-	materal_cache mats;
-};
-
-struct noise_scene {
-	
-	object init(v2 t);
-	void destroy() {}
-	material* get(i32 idx) const;
-
-private:
-	i32 lamb = 0;
-	materal_cache mats;
-};
-
 struct scene {
 
 	void init(i32 w, i32 h);
@@ -72,7 +84,7 @@ struct scene {
 private:
 	object scene_obj;
 	camera cam;
-	i32 max_depth = 5;
+	i32 max_depth = 8;
 
-	noise_scene def;
+	random_bvh_scene def;
 };

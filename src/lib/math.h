@@ -166,6 +166,72 @@ union f32_lane {
 };
 static_assert(sizeof(f32_lane) == LANE_WIDTH * 4, "sizeof(f32_lane) != LANE_WIDTH * 4");
 
+union v2_lane {
+	struct {
+		__lane x, y;
+	};
+	struct {
+		f32 xf[LANE_WIDTH], yf[LANE_WIDTH];
+	};
+	f32 af[2 * LANE_WIDTH];
+	f32_lane v[2];
+	__lane a[2] = {};
+
+	void VEC operator+=(const v2_lane& o) {x = __add_ps(x, o.x);
+						   		y = __add_ps(y, o.y);}
+	void VEC operator-=(const v2_lane& o) {x = __sub_ps(x, o.x);
+						   		y = __sub_ps(y, o.y);}
+	void VEC operator*=(const v2_lane& o) {x = __mul_ps(x, o.x);
+						   		y = __mul_ps(y, o.y);}
+	void VEC operator/=(const v2_lane& o) {x = __div_ps(x, o.x);
+						   		y = __div_ps(y, o.y);}
+	void VEC operator*=(f32_lane s) {
+							x = __mul_ps(x, s.v);
+						    y = __mul_ps(y, s.v);}
+	void VEC operator/=(f32_lane s) {
+							x = __div_ps(x, s.v);
+						    y = __div_ps(y, s.v);}
+	void operator*=(f32 s) {__lane _s = __set1_ps(s);
+							x = __mul_ps(x, _s);
+						    y = __mul_ps(y, _s);}
+	void operator/=(f32 s) {__lane _s = __set1_ps(s);
+							x = __div_ps(x, _s);
+						    y = __div_ps(y, _s);}
+
+	void VEC operator|=(f32_lane o) {x = __or_ps(x,o.v);
+								 y = __or_ps(y,o.v);}
+	void VEC operator&=(f32_lane o) {x = __and_ps(x,o.v);
+								 y = __and_ps(y,o.v);}
+	void VEC operator|=(const v2_lane& o) {x = __or_ps(x,o.x);
+								y = __or_ps(y,o.y);}
+	void VEC operator&=(const v2_lane& o) {x = __and_ps(x,o.x);
+								y = __and_ps(y,o.y);}
+
+	v2_lane VEC operator-() const {__lane _z = __setzero_ps();
+					return {__sub_ps(_z,x),
+							__sub_ps(_z,y)};}
+
+	v2 operator[](i32 idx) const {return {xf[idx],yf[idx]};}
+	void set(i32 idx, v2 o) {xf[idx] = o.x; yf[idx] = o.y;}
+
+	v2_lane() {}
+	v2_lane(f32 _x) {x = y = __set1_ps(_x);}
+	v2_lane(const f32_lane& _x) {x = y = _x.v;}
+	v2_lane(f32 _x, f32 _y) {x = __set1_ps(_x); 
+									 y = __set1_ps(_y);}
+	v2_lane(v2 _v) {x = __set1_ps(_v.x); 
+					y = __set1_ps(_v.y);}
+	v2_lane(f32_lane _x, f32_lane _y) {
+									 x = _x.v; 
+									 y = _y.v;}
+
+	v2_lane(const v2_lane& o) {memcpy(this,&o,sizeof(v2_lane));}
+	v2_lane(const v2_lane&& o) {memcpy(this,&o,sizeof(v2_lane));}
+	inline v2_lane VEC operator=(const v2_lane& o) {memcpy(this,&o,sizeof(v2_lane)); return *this;}
+	inline v2_lane VEC operator=(const v2_lane&& o) {memcpy(this,&o,sizeof(v2_lane)); return *this;}
+};
+static_assert(sizeof(v2_lane) == LANE_WIDTH * 8, "sizeof(v2_lane) != LANE_WIDTH * 8");
+
 union v3_lane {
 	struct {
 		__lane x, y, z;
@@ -663,6 +729,132 @@ inline bool VEC all(const f32_lane& v) {
 }
 inline bool VEC any(const f32_lane& v) {
 	return __movemask_ps(v.v) != 0x0;
+}
+
+
+inline v2_lane VEC operator+(const v2_lane& l, const v2_lane& r) {
+	return 
+	{__add_ps(l.x, r.x),
+	 __add_ps(l.y, r.y)};
+}
+inline v2_lane VEC operator+(const v2_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return 
+	{__add_ps(l.x, r),
+	 __add_ps(l.y, r)};
+}
+inline v2_lane VEC operator+(const f32 _l, const v2_lane& r) {
+	__lane l = __set1_ps(_l);
+	return 
+	{__add_ps(l, r.x),
+	 __add_ps(l, r.y)};
+}
+inline v2_lane VEC operator+(const v2_lane& l, const v2 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	return 
+	{__add_ps(l.x, x),
+	 __add_ps(l.y, y)};
+}
+inline v2_lane VEC operator+(const v2 l, const v2_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	return 
+	{__add_ps(x, r.x),
+	 __add_ps(y, r.y)};
+}
+inline v2_lane VEC operator-(const v2_lane& l, const v2_lane& r) {
+	return 
+	{__sub_ps(l.x, r.x),
+	 __sub_ps(l.y, r.y)};
+}
+inline v2_lane VEC operator-(const v2_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return 
+	{__sub_ps(l.x, r),
+	 __sub_ps(l.y, r)};
+}
+inline v2_lane VEC operator-(const f32 _l, const v2_lane& r) {
+	__lane l = __set1_ps(_l);
+	return 
+	{__sub_ps(l, r.x),
+	 __sub_ps(l, r.y)};
+}
+inline v2_lane VEC operator-(const v2_lane& l, const v2 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	return 
+	{__sub_ps(l.x, x),
+	 __sub_ps(l.y, y)};
+}
+inline v2_lane VEC operator-(const v2 l, const v2_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	return 
+	{__sub_ps(x, r.x),
+	 __sub_ps(y, r.y)};
+}
+inline v2_lane VEC operator*(const v2_lane& l, const v2_lane& r) {
+	return 
+	{__mul_ps(l.x, r.x),
+	 __mul_ps(l.y, r.y)};
+}
+inline v2_lane VEC operator*(const v2_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return 
+	{__mul_ps(l.x, r),
+	 __mul_ps(l.y, r)};
+}
+inline v2_lane VEC operator*(const f32 _l, const v2_lane& r) {
+	__lane l = __set1_ps(_l);
+	return 
+	{__mul_ps(l, r.x),
+	 __mul_ps(l, r.y)};
+}
+inline v2_lane VEC operator*(const v2_lane& l, const v2 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	return 
+	{__mul_ps(l.x, x),
+	 __mul_ps(l.y, y)};
+}
+inline v2_lane VEC operator*(const v2 l, const v2_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	return 
+	{__mul_ps(x, r.x),
+	 __mul_ps(y, r.y)};
+}
+inline v2_lane VEC operator/(const v2_lane& l, const v2_lane& r) {
+	return 
+	{__div_ps(l.x, r.x),
+	 __div_ps(l.y, r.y)};
+}
+inline v2_lane VEC operator/(const v2_lane& l, const f32 _r) {
+	__lane r = __set1_ps(_r);
+	return 
+	{__div_ps(l.x, r),
+	 __div_ps(l.y, r)};
+}
+inline v2_lane VEC operator/(const f32 _l, const v2_lane& r) {
+	__lane l = __set1_ps(_l);
+	return 
+	{__div_ps(l, r.x),
+	 __div_ps(l, r.y)};
+}
+inline v2_lane VEC operator/(const v2_lane& l, const v2 r) {
+	__lane x = __set1_ps(r.x);
+	__lane y = __set1_ps(r.y);
+	return 
+	{__div_ps(l.x, x),
+	 __div_ps(l.y, y)};
+}
+inline v2_lane VEC operator/(const v2 l, const v2_lane& r) {
+	__lane x = __set1_ps(l.x);
+	__lane y = __set1_ps(l.y);
+	return 
+	{__div_ps(x, r.x),
+	 __div_ps(y, r.y)};
 }
 
 inline f32_lane select(const f32_lane& l, const f32_lane& r, const f32_lane& m) {
