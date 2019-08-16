@@ -9,19 +9,31 @@ enum class mat : u8 {
 	none = 0,
 	lambertian,
 	metal,
-	dielectric
+	dielectric,
+	diffuse
 };
 
 struct scatter {
-	bool absorbed = false;
 	ray out;
-	v3 attenuation;
+	bool absorbed = false;
+	v3 attenuation, emitted;
+};
+
+struct diffuse {
+
+	static diffuse make(texture t);
+	void destroy() {tex.destroy();}
+
+	scatter bsdf(const ray& incoming, const trace& surface) const;
+
+private:
+	texture tex;
 };
 
 struct lambertian {
 
 	static lambertian make(texture t);
-	void destroy() {}
+	void destroy() {tex.destroy();}
 
 	scatter bsdf(const ray& incoming, const trace& surface) const;
 
@@ -66,7 +78,14 @@ struct material {
 		lambertian l;
 		metal m;
 		dielectric d;
+		diffuse df;
 	};
+	static material diffuse(texture t) {
+		material ret;
+		ret.type = mat::diffuse;
+		ret.df = diffuse::make(t);
+		return ret;
+	}
 	static material lambertian(texture t) {
 		material ret;
 		ret.type = mat::lambertian;
@@ -90,6 +109,7 @@ struct material {
 		case mat::lambertian: return l.bsdf(incoming,surface);
 		case mat::metal: return m.bsdf(incoming,surface);
 		case mat::dielectric: return d.bsdf(incoming,surface);
+		case mat::diffuse: return df.bsdf(incoming,surface);
 		default: assert(false);
 		}
 		return {};
@@ -100,6 +120,15 @@ struct material {
 	void operator=(const material& o) {memcpy(this,&o,sizeof(material));}
 	void operator=(const material&& o) {memcpy(this,&o,sizeof(material));}
 	material() {memset(this,0,sizeof(material));}
+	void destroy() {
+		switch(type) {
+		case mat::lambertian: l.destroy(); break;
+		case mat::metal: m.destroy(); break;
+		case mat::dielectric: d.destroy(); break;
+		case mat::diffuse: df.destroy(); break;
+		default: assert(false);
+		}
+	}
 };
 
 typedef i32 mat_id;

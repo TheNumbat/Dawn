@@ -19,10 +19,6 @@ checkerboard checkerboard::make(texture* o, texture* e) {
 	return ret;
 }
 
-void checkerboard::destroy() {
-	odd = even = null;
-}
-
 v3 checkerboard::sample(v2 uv, v3 p) const {
 
 	f32 sin = sinf(10.0f * p.x) * sinf(10.0f * p.y) * sinf(10.0f * p.z);

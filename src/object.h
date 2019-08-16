@@ -15,7 +15,14 @@ enum class obj : u8 {
 	list,
 	sphere,
 	sphere_moving,
-	sphere_lane
+	sphere_lane,
+	rect
+};
+
+enum class plane : u8 {
+	yz = 0,
+	xz = 1,
+	xy = 2
 };
 
 struct trace {
@@ -35,6 +42,21 @@ struct aabb {
 
 	static aabb enclose(const aabb& l, const aabb& r);
 	bool hit(const ray& incoming, v2 t) const;
+};
+
+struct rect {
+
+	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w);
+	void destroy() {}
+
+	aabb box(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
+
+private:
+	v2 u, v;
+	f32 w = 0.0f;
+	i32 mat = 0;
+	plane type = plane::xy;
 };
 
 struct bvh {
@@ -154,6 +176,7 @@ struct object {
 		sphere s;
 		sphere_moving sm;
 		sphere_lane sl;
+		rect re;
 	};
 
 	// NOTE(max): takes ownership
@@ -161,6 +184,12 @@ struct object {
 		object ret;
 		ret.type = obj::list;
 		ret.l = object_list::make(objs);
+		return ret;
+	}
+	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w) {
+		object ret;
+		ret.type = obj::rect;
+		ret.re = rect::make(mat, type, u, v, w);
 		return ret;
 	}
 	static object bvh(vec<object> objs, v2 t) {
@@ -201,6 +230,7 @@ struct object {
 		case obj::sphere: return s.hit(r, t);
 		case obj::sphere_lane: return sl.hit(r, t);
 		case obj::sphere_moving: return sm.hit(r, t);
+		case obj::rect: return re.hit(r, t);
 		default: assert(false);
 		}
 		return {};
@@ -212,6 +242,7 @@ struct object {
 		case obj::sphere: return s.box(t);
 		case obj::sphere_lane: return sl.box(t);
 		case obj::sphere_moving: return sm.box(t);
+		case obj::rect: return re.box(t);
 		default: assert(false);
 		}
 		return {};
@@ -229,6 +260,7 @@ struct object {
 		case obj::sphere: s.destroy(); break;
 		case obj::sphere_lane: sl.destroy(); break;
 		case obj::sphere_moving: sm.destroy(); break;
+		case obj::rect: re.destroy(); break;
 		default: assert(false);
 		}
 	}

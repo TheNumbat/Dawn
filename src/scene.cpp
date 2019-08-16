@@ -66,7 +66,8 @@ v3 scene::compute(const ray& r_) const {
 	
 	ray r = r_;
 	i32 depth = 0;
-	v3 accum(1.0f);	
+
+	v3 accum(0.0f), attn(1.0f);
 	
 	while(depth < max_depth) {
 		
@@ -76,23 +77,22 @@ v3 scene::compute(const ray& r_) const {
 			scatter s = def.mats.get(t.mat)->bsdf(r, t);
 
 			if(s.absorbed) {
-				return {};
+				return s.emitted;
 			} else {
-				accum *= s.attenuation;
+				accum += attn * s.emitted;
+				attn *= s.attenuation;
 				r = s.out;
 			}
 
 		} else {
 
-			v3 unit = norm(r.dir);
-			f32 fade = 0.5f * (unit.y + 1.0f);
-			return accum * lerp({0.5f, 0.7f, 1.0f}, {1.0f}, fade);
+			return accum;
 		}
 
 		depth++;
 	}
 
-	return {};
+	return accum;
 }
 
 v3 scene::sample(v2 uv) const {
@@ -209,7 +209,15 @@ object noise_scene::init(v2) {
 object planet_scene::init(v2) {
 
 	mats.clear();
+	flat = mats.add(material::lambertian(texture::constant({0.6f})));
 	lamb = mats.add(material::lambertian(texture::image("mars.jpg")));
+	light = mats.add(material::diffuse(texture::constant({8.0f})));
 
-	return object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f);
+	vec<object> objs;
+
+	objs.push(object::sphere(flat, {0.0f, -1000.0f, 0.0f}, 1000.0f));
+	objs.push(object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f));
+	objs.push(object::rect(light, plane::xy, {3.0f, 5.0f}, {1.0f, 3.0f}, -2.0f));
+
+	return object::list(objs);
 }

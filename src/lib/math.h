@@ -71,38 +71,6 @@
 #define RADIANS(v) (v * (PI32 / 180.0f)) 
 #define DEGREES(v) (v * (180.0f / PI32)) 
 
-// Technically a v4, and wasting a float. But at least the ops are somewhat accelerated.
-// The real speed-up comes from using the float and v3 lanes from math_simd, as these can
-// be AVX2 8x as well as SoA vector calculations and such.
-union v3 {
-	struct {
-		f32 x, y, z, _w;
-	};
-	__m128 v;
-	f32 a[4] = {};
-
-	void VEC operator+=(const v3 o) {v = _mm_add_ps(v,o.v);}
-	void VEC operator-=(const v3 o) {v = _mm_sub_ps(v,o.v);}
-	void VEC operator*=(const v3 o) {v = _mm_mul_ps(v,o.v);}
-	void VEC operator/=(const v3 o) {v = _mm_div_ps(v,o.v);}
-	void operator*=(f32 s) {v = _mm_mul_ps(v,_mm_set1_ps(s));}
-	void operator/=(f32 s) {v = _mm_div_ps(v,_mm_set1_ps(s));}
-	f32& operator[](i32 idx) {return a[idx];}
-	f32 operator[](i32 idx) const {return a[idx];}
-	v3 VEC operator-() const {return _mm_sub_ps(_mm_setzero_ps(),v);}
-
-	v3() {}
-	v3(f32 _x) {v = _mm_set1_ps(_x);}
-	v3(__m128 _v) {v = _v;}
-	v3(f32 _x, f32 _y, f32 _z) {v = _mm_set_ps(0.0f, _z, _y, _x);}
-	v3(i32 _x, i32 _y, i32 _z) {v = _mm_set_ps(0.0f, (f32)_z, (f32)_y, (f32)_x);}
-	v3(const v3& o) {v = o.v;}
-	v3(const v3&& o) {v = o.v;}
-	v3& VEC operator=(const v3& o) {v = o.v; return *this;}
-	v3& VEC operator=(const v3&& o) {v = o.v; return *this;}
-};
-static_assert(sizeof(v3) == 16, "sizeof(v3) != 16");
-
 union v2 {
 	struct {
 		f32 x, y;
@@ -127,6 +95,40 @@ union v2 {
 	v2(const v2&& o) {x = o.x; y = o.y;}
 	v2& operator=(const v2& o) {x = o.x; y = o.y; return *this;}
 	v2& operator=(const v2&& o) {x = o.x; y = o.y; return *this;}
+};
+static_assert(sizeof(v2) == 8, "sizeof(v2) != 8");
+
+// Technically a v4, and wasting a float. But at least the ops are somewhat accelerated.
+// The real speed-up comes from using the float and v3 lanes from math_simd, as these can
+// be AVX2 8x as well as SoA vector calculations and such.
+union v3 {
+	struct {
+		f32 x, y, z, _w;
+	};
+	__m128 v;
+	f32 a[4] = {};
+
+	void VEC operator+=(const v3 o) {v = _mm_add_ps(v,o.v);}
+	void VEC operator-=(const v3 o) {v = _mm_sub_ps(v,o.v);}
+	void VEC operator*=(const v3 o) {v = _mm_mul_ps(v,o.v);}
+	void VEC operator/=(const v3 o) {v = _mm_div_ps(v,o.v);}
+	void operator*=(f32 s) {v = _mm_mul_ps(v,_mm_set1_ps(s));}
+	void operator/=(f32 s) {v = _mm_div_ps(v,_mm_set1_ps(s));}
+	f32& operator[](i32 idx) {return a[idx];}
+	f32 operator[](i32 idx) const {return a[idx];}
+	v3 VEC operator-() const {return _mm_sub_ps(_mm_setzero_ps(),v);}
+
+	v3() {}
+	v3(f32 _x) {v = _mm_set1_ps(_x);}
+	v3(__m128 _v) {v = _v;}
+	v3(v2 xy, f32 _z) {v = _mm_set_ps(0.0f, _z, xy.y, xy.x);}
+	v3(f32 _x, v2 yz) {v = _mm_set_ps(0.0f, yz.y, yz.x, _x);}
+	v3(f32 _x, f32 _y, f32 _z) {v = _mm_set_ps(0.0f, _z, _y, _x);}
+	v3(i32 _x, i32 _y, i32 _z) {v = _mm_set_ps(0.0f, (f32)_z, (f32)_y, (f32)_x);}
+	v3(const v3& o) {v = o.v;}
+	v3(const v3&& o) {v = o.v;}
+	v3& VEC operator=(const v3& o) {v = o.v; return *this;}
+	v3& VEC operator=(const v3&& o) {v = o.v; return *this;}
 };
 static_assert(sizeof(v3) == 16, "sizeof(v3) != 16");
 

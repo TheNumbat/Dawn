@@ -2,8 +2,8 @@ TODO:
 
 Resources
 	raytracing the next week: page 30
-		v2_lane and sphere_lane mapping/uv
-		
+		rect_lane
+		valgrind
 	start PBRT book
 	raytracing the rest of your life
 

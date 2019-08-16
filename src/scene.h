@@ -47,7 +47,7 @@ struct planet_scene {
 	materal_cache mats;
 
 private:
-	i32 lamb = 0;
+	i32 lamb = 0, light = 0, flat = 0;
 };
 
 
@@ -86,5 +86,5 @@ private:
 	camera cam;
 	i32 max_depth = 8;
 
-	random_bvh_scene def;
+	planet_scene def;
 };

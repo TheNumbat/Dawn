@@ -1,6 +1,19 @@
 
 #include "material.h"
 
+diffuse diffuse::make(texture t) {
+	diffuse ret;
+	ret.tex = t;
+	return ret;
+}
+
+scatter diffuse::bsdf(const ray& incoming, const trace& surface) const {
+	scatter ret;
+	ret.emitted = tex.sample(surface.uv, {});
+	ret.attenuation = {1.0f};
+	return ret;
+}
+
 lambertian lambertian::make(texture t) {
 	lambertian ret;
 	ret.tex = t;

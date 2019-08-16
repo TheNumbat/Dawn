@@ -14,6 +14,63 @@ trace trace::min(const trace& l, const trace& r) {
 	return {};
 }
 
+rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w) {
+	rect ret;
+	ret.type = type;
+	ret.mat = mat;
+	ret.u = u;
+	ret.v = v;
+	ret.w = w;
+	return ret;
+}
+
+aabb rect::box(v2 t) const {
+
+	v3 mi, ma;
+	switch(type) {
+	case plane::yz: {
+		mi = v3(w - 0.0001f, u);
+		ma = v3(w + 0.0001f, v);
+	} break;
+	case plane::xz: {
+		mi = v3(u.x, w - 0.0001f, u.y);
+		ma = v3(v.x, w + 0.0001f, v.y);
+	} break;
+	case plane::xy: {
+		mi = v3(u, w - 0.0001f);
+		ma = v3(v, w + 0.0001f);
+	} break;
+	}
+	return {mi, ma};
+}
+
+trace rect::hit(const ray& r, v2 t) const {
+
+	trace ret;
+
+	u8 w_idx = (u8)type;
+	u8 u_idx = (w_idx + 1) % 3;
+	u8 v_idx = (u_idx + 1) % 3;
+
+	f32 t_pos = (w - r.pos[w_idx]) / r.dir[w_idx];
+
+	if(t_pos < t.x || t_pos > t.y) return ret;
+
+	f32 u_pos = r.pos[u_idx] + t_pos * r.dir[u_idx];
+	f32 v_pos = r.pos[v_idx] + t_pos * r.dir[v_idx];
+
+	if(u_pos < u.x || u_pos > u.y || v_pos < v.x || v_pos > v.y) return ret;
+
+	ret.hit = true;
+	ret.t = t_pos;
+	ret.mat = mat;
+	ret.uv = {(u_pos - u.x) / (u.y - u.x), (v_pos - v.x) / (v.y - v.x)};
+	ret.pos = r.get(t_pos);
+	ret.normal[w_idx] = 1.0f;
+
+	return ret;
+}
+
 i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 						v2 t, i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 
