@@ -467,7 +467,7 @@ inline bool VEC any(const v3 v) {
 
 //TODO(max): SIMD - _mm_pow_ps needs Intel SVML or another library for log/exp 
 inline v3 VEC pow(const v3 v, const f32 r) {
-	return {pow(v.x,r),pow(v.y,r),pow(v.z,r)};
+	return {powf(v.x,r),powf(v.y,r),powf(v.z,r)};
 }
 inline f32 dot(const v3 l, const v3 r) {
 	return v3{_mm_dp_ps(l.v, r.v, 0b01110001)}.x;
