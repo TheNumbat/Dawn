@@ -11,6 +11,7 @@ scatter diffuse::bsdf(const ray& incoming, const trace& surface) const {
 	scatter ret;
 	ret.emitted = tex.sample(surface.uv, {});
 	ret.attenuation = {1.0f};
+	ret.absorbed = true;
 	return ret;
 }
 

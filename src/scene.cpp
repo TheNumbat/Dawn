@@ -51,7 +51,7 @@ scene::~scene() {
 void scene::init(i32 w, i32 h) {
 
 	g_perlin.init();
-	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
+	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 40.0f, 0.0f, {0.0f, 1.0f});
 
 	scene_obj = def.init(cam.time);
 }
@@ -76,17 +76,17 @@ v3 scene::compute(const ray& r_) const {
 
 			scatter s = def.mats.get(t.mat)->bsdf(r, t);
 
+			accum += attn * s.emitted;
+			attn *= s.attenuation;
+			r = s.out;
+
 			if(s.absorbed) {
-				return s.emitted;
-			} else {
-				accum += attn * s.emitted;
-				attn *= s.attenuation;
-				r = s.out;
+				return accum;
 			}
 
 		} else {
 
-			return accum;
+			return accum + attn;
 		}
 
 		depth++;
@@ -192,18 +192,29 @@ object basic_scene::init(v2) {
 	return builder.finish();
 }
 
-object noise_scene::init(v2) {
+object cornell_box::init(v2) {
 
 	mats.clear();
 
-	lamb = mats.add(material::lambertian(texture::noise({}, 4.0f)));
+	red = mats.add(material::lambertian(texture::constant({0.65f, 0.05f, 0.05f})));
+	white = mats.add(material::lambertian(texture::constant({0.73f, 0.73f, 0.73f})));
+	green = mats.add(material::lambertian(texture::constant({0.12f, 0.45f, 0.15f})));
+	light = mats.add(material::diffuse(texture::constant({150.0f})));
 
 	vec<object> objs;
 
-	objs.push(object::sphere(lamb, {0.0f, -1000.0f, 0.0f}, 1000.0f));
-	objs.push(object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f));
+	objs.push(object::rect(green, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
+	objs.push(object::rect(red, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
+	objs.push(object::rect(light, plane::xz, {213.0f, 343.0f}, {227.0f, 332.0f}, 554.0f));
+	
+	objs.push(object::rect(white, plane::xz, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
+	objs.push(object::rect(white, plane::xz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
+	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 
-	return object::list(objs);
+	// objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
+	// objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
+
+	return object::bvh(objs, {0.0f, 1.0f});
 }
 
 object planet_scene::init(v2) {

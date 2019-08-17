@@ -28,7 +28,7 @@ private:
 	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0;
 };
 
-struct noise_scene {
+struct cornell_box {
 	
 	object init(v2 t);
 	
@@ -36,7 +36,7 @@ struct noise_scene {
 	materal_cache mats;
 
 private:
-	i32 lamb = 0;
+	i32 red, white, green, light;
 };
 
 struct planet_scene {
@@ -86,5 +86,5 @@ private:
 	camera cam;
 	i32 max_depth = 8;
 
-	planet_scene def;
+	cornell_box def;
 };

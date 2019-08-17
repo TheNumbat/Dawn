@@ -14,17 +14,57 @@ trace trace::min(const trace& l, const trace& r) {
 	return {};
 }
 
-rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w) {
+box box::make(i32 mat, v3 min, v3 max) {
+	box ret;
+	ret.min = min;
+	ret.max = max;
+
+	ret.list.push(object::rect(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, max.z));
+	ret.list.push(object::rect(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, min.z, true));
+
+	ret.list.push(object::rect(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, max.y));
+	ret.list.push(object::rect(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, min.y, true));
+
+	ret.list.push(object::rect(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, max.x));
+	ret.list.push(object::rect(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, min.x, true));
+
+	return ret;
+}
+
+aabb box::bbox(v2 t) const {
+
+	return {min, max};
+}
+
+trace box::hit(const ray& r, v2 t) const {
+
+	// TODO(max): this repeats list hit, but we don't really want to add
+	// another pointer indirection to use object::list
+
+	trace ret;
+	f32 closest = t.y;		
+	for(const object& o : list) {
+		trace next = o.hit(r,{t.x,closest});
+		if(next.hit) {
+			ret = next;
+			closest = next.t;
+		}
+	}
+	return ret;	
+}
+
+rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip) {
 	rect ret;
 	ret.type = type;
 	ret.mat = mat;
 	ret.u = u;
 	ret.v = v;
 	ret.w = w;
+	ret.flip = flip ? -1.0f : 1.0f;
 	return ret;
 }
 
-aabb rect::box(v2 t) const {
+aabb rect::bbox(v2 t) const {
 
 	v3 mi, ma;
 	switch(type) {
@@ -66,7 +106,7 @@ trace rect::hit(const ray& r, v2 t) const {
 	ret.mat = mat;
 	ret.uv = {(u_pos - u.x) / (u.y - u.x), (v_pos - v.x) / (v.y - v.x)};
 	ret.pos = r.get(t_pos);
-	ret.normal[w_idx] = 1.0f;
+	ret.normal[w_idx] = flip;
 
 	return ret;
 }
@@ -78,12 +118,13 @@ i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 
 	std::sort(list.begin(), list.end(), 
 		[axis, t](const object& l, const object& r) -> bool {
-		aabb lbox = l.box(t);
-		aabb rbox = r.box(t);
+		aabb lbox = l.bbox(t);
+		aabb rbox = r.bbox(t);
 		return lbox.min[axis] < rbox.min[axis];
 	});
 
 	node ret;
+	i16 idx = 0;
 
 	assert(!list.empty() && list.size < UINT16_MAX);
 
@@ -93,7 +134,7 @@ i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 
 		objs.push(create_leaf(list));
 		ret.left = (i16)(objs.size - 1);
-		ret.box_ = objs[ret.left].box(t);
+		ret.box_ = objs[ret.left].bbox(t);
 
 		nodes.push(ret);
 
@@ -109,11 +150,12 @@ i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 
 		// TODO(max): can we make this a complete tree with implicit parent/children position?
 		nodes.push(ret);
-		nodes[ret.left].parent = (i16)(nodes.size - 1);
-		nodes[ret.right].parent = (i16)(nodes.size - 1);
+		idx = (i16)(nodes.size - 1);
+		nodes[ret.left].parent = idx;
+		nodes[ret.right].parent = idx;
 	}
 
-	return (i16)(nodes.size - 1);
+	return idx;
 }
 
 bvh bvh::make(const vec<object>& objs, v2 t) {
@@ -146,7 +188,7 @@ void bvh::destroy() {
 	root = -1;
 }
 
-aabb bvh::box(v2) const {
+aabb bvh::bbox(v2) const {
 	assert(root >= 0 && root < nodes.size);
 	return nodes[root].box_;
 }
@@ -291,7 +333,7 @@ sphere sphere::make(v3 p, f32 r, i32 m) {
 	return ret;
 }
 
-aabb sphere::box(v2) const {
+aabb sphere::bbox(v2) const {
 	return aabb{pos - rad, pos + rad};
 }
 
@@ -353,10 +395,10 @@ v2 sphere_moving::uv(const trace& info) const {
 	return sphere::map((center(info.t) - info.pos) / rad);
 }
 
-aabb sphere_moving::box(v2 t) const {
+aabb sphere_moving::bbox(v2 t) const {
 
-	return aabb::enclose(sphere::make(center(t.x),rad,mat).box(t),
-						 sphere::make(center(t.y),rad,mat).box(t));
+	return aabb::enclose(sphere::make(center(t.x),rad,mat).bbox(t),
+						 sphere::make(center(t.y),rad,mat).bbox(t));
 }
 
 trace sphere_moving::hit(const ray& r, v2 t) const {
@@ -373,7 +415,7 @@ sphere_lane sphere_lane::make(v3_lane p, f32_lane r, f32_lane m) {
 	return ret;
 }
 
-aabb sphere_lane::box(v2) const {
+aabb sphere_lane::bbox(v2) const {
 	v3_lane min = pos - rad;
 	v3_lane max = pos + rad;
 	return {hmin(min), hmax(max)};
@@ -435,13 +477,13 @@ void object_list::destroy() {
 	objects.destroy();
 }
 
-aabb object_list::box(v2 t) const {
+aabb object_list::bbox(v2 t) const {
 	
 	assert(!objects.empty());
 
-	aabb ret = objects[0].box(t);
+	aabb ret = objects[0].bbox(t);
 	for(const object& o : objects) {
-		ret = aabb::enclose(ret,o.box(t));
+		ret = aabb::enclose(ret,o.bbox(t));
 	}
 	return ret;
 }

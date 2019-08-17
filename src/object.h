@@ -16,7 +16,8 @@ enum class obj : u8 {
 	sphere,
 	sphere_moving,
 	sphere_lane,
-	rect
+	rect,
+	box
 };
 
 enum class plane : u8 {
@@ -44,17 +45,32 @@ struct aabb {
 	bool hit(const ray& incoming, v2 t) const;
 };
 
+struct box {
+
+	static box make(i32 mat, v3 min, v3 max);
+
+	void destroy() {list.destroy();}
+
+	aabb bbox(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
+
+private:
+	v3 min, max;
+	vec<object> list;
+};
+
 struct rect {
 
-	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w);
+	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip);
 	void destroy() {}
 
-	aabb box(v2 t) const;
+	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
 	v2 u, v;
 	f32 w = 0.0f;
+	f32 flip = 1.0f;
 	i32 mat = 0;
 	plane type = plane::xy;
 };
@@ -66,7 +82,7 @@ struct bvh {
 					std::function<object(vec<object>)> create_leaf);
 	void destroy();
 
-	aabb box(v2 t) const;
+	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
@@ -106,7 +122,7 @@ struct sphere {
 
 	static v2 map(v3 pos);
 
-	aabb box(v2 t) const;
+	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
@@ -126,7 +142,7 @@ struct sphere_moving {
 	void destroy() {}
 
 
-	aabb box(v2 t) const;
+	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
@@ -145,7 +161,7 @@ struct sphere_lane {
 	static sphere_lane make(v3_lane p, f32_lane r, f32_lane m);
 	void destroy() {}
 
-	aabb box(v2 t) const;
+	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
@@ -161,7 +177,7 @@ struct object_list {
 	static object_list make(vec<object>& objs);
 	void destroy();
 
-	aabb box(v2 t) const;
+	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
 private:
@@ -177,6 +193,7 @@ struct object {
 		sphere_moving sm;
 		sphere_lane sl;
 		rect re;
+		box bx;
 	};
 
 	// NOTE(max): takes ownership
@@ -186,10 +203,16 @@ struct object {
 		ret.l = object_list::make(objs);
 		return ret;
 	}
-	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w) {
+	static object box(i32 mat, v3 min, v3 max) {
+		object ret;
+		ret.type = obj::box;
+		ret.bx = box::make(mat, min, max);
+		return ret;
+	}
+	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w, bool f = false) {
 		object ret;
 		ret.type = obj::rect;
-		ret.re = rect::make(mat, type, u, v, w);
+		ret.re = rect::make(mat, type, u, v, w, f);
 		return ret;
 	}
 	static object bvh(vec<object> objs, v2 t) {
@@ -231,18 +254,20 @@ struct object {
 		case obj::sphere_lane: return sl.hit(r, t);
 		case obj::sphere_moving: return sm.hit(r, t);
 		case obj::rect: return re.hit(r, t);
+		case obj::box: return bx.hit(r, t);
 		default: assert(false);
 		}
 		return {};
 	}
-	aabb box(v2 t) const {
+	aabb bbox(v2 t) const {
 		switch(type) {
-		case obj::bvh: return b.box(t);
-		case obj::list: return l.box(t);
-		case obj::sphere: return s.box(t);
-		case obj::sphere_lane: return sl.box(t);
-		case obj::sphere_moving: return sm.box(t);
-		case obj::rect: return re.box(t);
+		case obj::bvh: return b.bbox(t);
+		case obj::list: return l.bbox(t);
+		case obj::sphere: return s.bbox(t);
+		case obj::sphere_lane: return sl.bbox(t);
+		case obj::sphere_moving: return sm.bbox(t);
+		case obj::rect: return re.bbox(t);
+		case obj::box: return bx.bbox(t);
 		default: assert(false);
 		}
 		return {};
@@ -261,6 +286,7 @@ struct object {
 		case obj::sphere_lane: sl.destroy(); break;
 		case obj::sphere_moving: sm.destroy(); break;
 		case obj::rect: re.destroy(); break;
+		case obj::box: bx.destroy(); break;
 		default: assert(false);
 		}
 	}
