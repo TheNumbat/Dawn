@@ -86,5 +86,5 @@ private:
 	camera cam;
 	i32 max_depth = 8;
 
-	cornell_box def;
+	random_bvh_scene def;
 };

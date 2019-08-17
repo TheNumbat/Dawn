@@ -164,8 +164,8 @@ void gui_main() {
 		}
 
 		if(ImGui::Button("Generate")) {
-			s.destroy();
 			result.destroy();
+			s.destroy();
 
 			s.init(size[0], size[1]);
 			result.init(size[0], size[1], size[2]);

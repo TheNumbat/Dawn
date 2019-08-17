@@ -51,7 +51,8 @@ scene::~scene() {
 void scene::init(i32 w, i32 h) {
 
 	g_perlin.init();
-	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 40.0f, 0.0f, {0.0f, 1.0f});
+	// cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 40.0f, 0.0f, {0.0f, 1.0f});
+	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
 
 	scene_obj = def.init(cam.time);
 }
@@ -211,10 +212,10 @@ object cornell_box::init(v2) {
 	objs.push(object::rect(white, plane::xz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
 	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 
-	// objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
-	// objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
+	objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
+	objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
 
-	return object::bvh(objs, {0.0f, 1.0f});
+	return object::list(objs);
 }
 
 object planet_scene::init(v2) {
