@@ -38,13 +38,10 @@ aabb box::bbox(v2) const {
 
 trace box::hit(const ray& r, v2 t) const {
 
-	// TODO(max): this repeats list hit, but we don't really want to add
-	// another pointer indirection to use object::list
-
 	trace ret;
 	f32 closest = t.y;
 	for(const rect& re : sides) {
-		trace next = re.hit(r,{t.x,closest});
+		trace next = re.hit(r, {t.x, closest});
 		if(next.hit) {
 			ret = next;
 			closest = next.t;
@@ -66,22 +63,23 @@ rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip) {
 
 aabb rect::bbox(v2) const {
 
-	v3 mi, ma;
 	switch(type) {
 	case plane::yz: {
-		mi = v3(w - 0.0001f, u.x, v.x);
-		ma = v3(w + 0.0001f, u.y, v.y);
+		return {{w - 0.0001f, u.x, v.x},
+				{w + 0.0001f, u.y, v.y}};
 	} break;
 	case plane::xz: {
-		mi = v3(u.x, w - 0.0001f, v.x);
-		ma = v3(u.y, w - 0.0001f, v.y);
+		return {{u.x, w - 0.0001f, v.x},
+				{u.y, w + 0.0001f, v.y}};
 	} break;
 	case plane::xy: {
-		mi = v3(u.x, v.x, w - 0.0001f);
-		ma = v3(u.y, v.y, w + 0.0001f);
+		return {{u.x, v.x, w - 0.0001f},
+				{u.y, v.y, w + 0.0001f}};
 	} break;
+
+	default: assert(false);
 	}
-	return {mi, ma};
+	return {};
 }
 
 trace rect::hit(const ray& r, v2 t) const {
@@ -89,8 +87,8 @@ trace rect::hit(const ray& r, v2 t) const {
 	trace ret;
 
 	u8 w_idx = (u8)type;
-	u8 u_idx = (w_idx + 1) % 3;
-	u8 v_idx = (u_idx + 1) % 3;
+	u8 u_idx = ((u8)type + 1) % 3;
+	u8 v_idx = ((u8)type + 2) % 3;
 
 	f32 t_pos = (w - r.pos[w_idx]) / r.dir[w_idx];
 
@@ -114,7 +112,7 @@ trace rect::hit(const ray& r, v2 t) const {
 i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& nodes, 
 						v2 t, i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
 
-	i32 axis = (i32)(randomf() * 3.0f);
+	i32 axis = randomu() % 3;
 
 	std::sort(list.begin(), list.end(), 
 		[axis, t](const object& l, const object& r) -> bool {
@@ -198,7 +196,6 @@ aabb bvh::bbox(v2) const {
 trace bvh::hit(const ray& r, v2 t) const {
 
 	assert(root >= 0 && root < nodes.size);
-	assert(nodes[root].type_ == node::type::node);
 
 	trace result;
 	

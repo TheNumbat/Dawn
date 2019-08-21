@@ -1,11 +1,9 @@
 TODO:
 
-Resources
-	raytracing the next week: page 39
-		fix box
-		rect_lane
-		box using rect_lane
-		valgrind / clang test
+Resources:
+	rect_lane
+	box using rect_lane
+	raytracing the next week: page 40
 
 	start PBRT book
 	raytracing the rest of your life

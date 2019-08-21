@@ -1043,6 +1043,20 @@ inline f32 VEC hmax(const f32_lane& l) {
 	return f32_lane{v}.f[0];
 }
 
+inline f32 VEC hmin(const v3 l) {
+	__m128 v = l.v;
+    v = _mm_min_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,2,3)));
+    v = _mm_min_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,0,1)));
+	return v3{v}.x;
+}
+
+inline f32 VEC hmax(const v3 l) {
+	__m128 v = l.v;
+    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,2,3)));
+    v = _mm_max_ps(v, _mm_shuffle_ps(v, v, _MM_SHUFFLE(0,0,0,1)));
+	return v3{v}.x;
+}
+
 inline v3 VEC hmin(const v3_lane& l) {
 	return {hmin(l.x),hmin(l.y),hmin(l.z)};
 }

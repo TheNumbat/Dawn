@@ -69,7 +69,7 @@ v3 scene::compute(const ray& r_) const {
 	
 	while(depth < max_depth) {
 		
-		trace t = scene_obj.hit(r, {0.001f, FLT_MAX});
+		trace t = scene_obj.hit(r, {0.0001f, FLT_MAX});
 		if(t.hit) {
 
 			scatter s = def.mats.get(t.mat)->bsdf(r, t);
@@ -206,7 +206,7 @@ void basic_scene::destroy() {
 
 object cornell_box::init(i32 w, i32 h) {
 
-	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 40.0f, 0.0f, {0.0f, 1.0f});
+	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 50.0f, 0.0f, {0.0f, 1.0f});
 	mats.clear();
 
 	red = mats.add(material::lambertian(texture::constant({0.65f, 0.05f, 0.05f})));
@@ -224,10 +224,12 @@ object cornell_box::init(i32 w, i32 h) {
 	objs.push(object::rect(white, plane::xz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
 	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 
-	// objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
-	// objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
+	objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
+	objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
 
-	return object::bvh(objs, cam.time);
+	object ret = object::bvh(objs, cam.time);
+	objs.destroy();
+	return ret;
 }
 
 void cornell_box::destroy() {
@@ -248,9 +250,12 @@ object planet_scene::init(i32 w, i32 h) {
 
 	objs.push(object::sphere(flat, {0.0f, -1000.0f, 0.0f}, 1000.0f));
 	objs.push(object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f));
+	objs.push(object::rect(light, plane::yz, {3.0f, 5.0f}, {1.0f, 3.0f}, -2.0f));
 	objs.push(object::rect(light, plane::xy, {3.0f, 5.0f}, {1.0f, 3.0f}, -2.0f));
 
-	return object::bvh(objs, cam.time);
+	object ret = object::bvh(objs, cam.time);
+	objs.destroy();
+	return ret;
 }
 
 void planet_scene::destroy() {

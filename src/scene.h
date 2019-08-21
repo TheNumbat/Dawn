@@ -86,7 +86,7 @@ struct scene {
 
 private:
 	object scene_obj;
-	i32 max_depth = 8;
+	i32 max_depth = 16;
 
 	cornell_box def;
 };
