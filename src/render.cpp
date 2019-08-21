@@ -15,10 +15,12 @@ bool render_thread(thread_data data) {
 				col += data.sc->sample({u,v});	
 			}
 
-			col /= (f32)data.s;
-			u8 r = (u8)(clamp(col.x, 0.0f, 1.0f) * 255.0f);
-			u8 g = (u8)(clamp(col.y, 0.0f, 1.0f) * 255.0f);
-			u8 b = (u8)(clamp(col.z, 0.0f, 1.0f) * 255.0f);
+			// TODO(max): tone mapping
+			col = pow(clamp(col / (f32)data.s, 0.0f, 1.0f), 1.0f / 2.2f);
+
+			u8 r = (u8)(col.x * 255.0f);
+			u8 g = (u8)(col.y * 255.0f);
+			u8 b = (u8)(col.z * 255.0f);
 
 			data.data[y * data.total_w + x] = (0xff << 24) | (b << 16) | (g << 8) | r;
 		}

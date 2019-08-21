@@ -45,23 +45,9 @@ struct aabb {
 	bool hit(const ray& incoming, v2 t) const;
 };
 
-struct box {
-
-	static box make(i32 mat, v3 min, v3 max);
-
-	void destroy() {list.destroy();}
-
-	aabb bbox(v2 t) const;
-	trace hit(const ray& r, v2 t) const;
-
-private:
-	v3 min, max;
-	vec<object> list;
-};
-
 struct rect {
 
-	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip);
+	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip = false);
 	void destroy() {}
 
 	aabb bbox(v2 t) const;
@@ -73,6 +59,19 @@ private:
 	f32 flip = 1.0f;
 	i32 mat = 0;
 	plane type = plane::xy;
+};
+
+struct box {
+
+	static box make(i32 mat, v3 min, v3 max);
+	void destroy() {}
+
+	aabb bbox(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
+
+private:
+	v3 min, max;
+	rect sides[6];
 };
 
 struct bvh {
@@ -275,8 +274,8 @@ struct object {
 	
 	object(const object& o) {memcpy(this,&o,sizeof(object));}
 	object(const object&& o) {memcpy(this,&o,sizeof(object));}
-	void operator=(const object& o) {memcpy(this,&o,sizeof(object));}
-	void operator=(const object&& o) {memcpy(this,&o,sizeof(object));}
+	object& operator=(const object& o) {memcpy(this,&o,sizeof(object)); return *this;}
+	object& operator=(const object&& o) {memcpy(this,&o,sizeof(object)); return *this;}
 	object() {memset(this,0,sizeof(object));}
 	void destroy() {
 		switch(type) {

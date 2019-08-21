@@ -1,9 +1,12 @@
 TODO:
 
 Resources
-	raytracing the next week: page 30
+	raytracing the next week: page 39
+		fix box
 		rect_lane
-		valgrind
+		box using rect_lane
+		valgrind / clang test
+
 	start PBRT book
 	raytracing the rest of your life
 
@@ -15,14 +18,11 @@ Images
 	environment map / custom sky definitions
 
 Features
-	progressive rendering
+	progressive rendering - non-random sampling; render in epochs and blend together
 	importance sampling
 	first-hit rasterization
 	GPU compute/RTX path?
 	break out scene definitions into it's own files; prep for model/scene loading
-
-Refactoring
-	maybe move camera into scene definition
 
 Optimizations
 	General

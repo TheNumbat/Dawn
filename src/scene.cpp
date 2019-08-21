@@ -51,14 +51,11 @@ scene::~scene() {
 void scene::init(i32 w, i32 h) {
 
 	g_perlin.init();
-	// cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 40.0f, 0.0f, {0.0f, 1.0f});
-	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
 
-	scene_obj = def.init(cam.time);
+	scene_obj = def.init(w, h);
 }
 
 void scene::destroy() {
-	cam = {};
 	scene_obj.destroy();
 	def.destroy();
 }
@@ -87,7 +84,7 @@ v3 scene::compute(const ray& r_) const {
 
 		} else {
 
-			return accum + attn;
+			return accum;
 		}
 
 		depth++;
@@ -99,16 +96,23 @@ v3 scene::compute(const ray& r_) const {
 v3 scene::sample(v2 uv) const {
 		
 	v2 jit = {randomf(), randomf()};
-	ray r = cam.get_ray(uv, jit);
+	ray r = def.cam.get_ray(uv, jit);
 		
 	v3 result = safe(compute(r));
 
-	// TODO(max): effect/HDR/Gamma pipeline
-	return pow(result, 1.0f / 2.2f);
+	return result;
 }
 
-object random_bvh_scene::init(v2 t) {
+void random_bvh_scene::destroy() {
+	mats.destroy();
+	cam = {};
+	even = odd = {};
+	lamb0 = lamb1 = met0 = dia0 = 0;
+}
+
+object random_bvh_scene::init(i32 w, i32 h) {
 	
+	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
 	mats.clear();
 
 	even = texture::constant({0.2f, 0.3f, 0.1f});
@@ -159,7 +163,7 @@ object random_bvh_scene::init(v2 t) {
 		}
 	}
 
-	object ret = object::bvh(objs, t, LANE_WIDTH, [](vec<object> list) -> object {
+	object ret = object::bvh(objs, cam.time, LANE_WIDTH, [](vec<object> list) -> object {
 
 		sphere_lane_builder builder;
 
@@ -174,8 +178,9 @@ object random_bvh_scene::init(v2 t) {
 	return ret;
 }
 
-object basic_scene::init(v2) {
+object basic_scene::init(i32 w, i32 h) {
 
+	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
 	mats.clear();
 
 	lamb0 = mats.add(material::lambertian(texture::constant({0.6f})));
@@ -193,14 +198,21 @@ object basic_scene::init(v2) {
 	return builder.finish();
 }
 
-object cornell_box::init(v2) {
+void basic_scene::destroy() {
+	mats.destroy();
+	cam = {};
+	lamb0 = lamb1 = met0 = dia0 = 0;
+}
 
+object cornell_box::init(i32 w, i32 h) {
+
+	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 40.0f, 0.0f, {0.0f, 1.0f});
 	mats.clear();
 
 	red = mats.add(material::lambertian(texture::constant({0.65f, 0.05f, 0.05f})));
 	white = mats.add(material::lambertian(texture::constant({0.73f, 0.73f, 0.73f})));
 	green = mats.add(material::lambertian(texture::constant({0.12f, 0.45f, 0.15f})));
-	light = mats.add(material::diffuse(texture::constant({150.0f})));
+	light = mats.add(material::diffuse(texture::constant({15.0f})));
 
 	vec<object> objs;
 
@@ -212,14 +224,21 @@ object cornell_box::init(v2) {
 	objs.push(object::rect(white, plane::xz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
 	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 
-	objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
-	objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
+	// objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
+	// objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
 
-	return object::list(objs);
+	return object::bvh(objs, cam.time);
 }
 
-object planet_scene::init(v2) {
+void cornell_box::destroy() {
+	mats.destroy();
+	cam = {};
+	red = white = green = light = 0;
+}
 
+object planet_scene::init(i32 w, i32 h) {
+
+	cam.init({13.0f, 2.0f, 3.0f}, {}, w, h, 60.0f, 0.1f, {0.0f, 1.0f});
 	mats.clear();
 	flat = mats.add(material::lambertian(texture::constant({0.6f})));
 	lamb = mats.add(material::lambertian(texture::image("mars.jpg")));
@@ -231,5 +250,11 @@ object planet_scene::init(v2) {
 	objs.push(object::sphere(lamb, {0.0f, 2.0f, 0.0f}, 2.0f));
 	objs.push(object::rect(light, plane::xy, {3.0f, 5.0f}, {1.0f, 3.0f}, -2.0f));
 
-	return object::list(objs);
+	return object::bvh(objs, cam.time);
+}
+
+void planet_scene::destroy() {
+	mats.destroy();
+	cam = {};
+	flat = lamb = light = 0;
 }

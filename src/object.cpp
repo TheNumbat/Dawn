@@ -19,19 +19,19 @@ box box::make(i32 mat, v3 min, v3 max) {
 	ret.min = min;
 	ret.max = max;
 
-	ret.list.push(object::rect(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, max.z));
-	ret.list.push(object::rect(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, min.z, true));
+	ret.sides[0] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, max.z);
+	ret.sides[1] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, min.z, true);
 
-	ret.list.push(object::rect(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, max.y));
-	ret.list.push(object::rect(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, min.y, true));
+	ret.sides[2] = rect::make(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, max.y);
+	ret.sides[3] = rect::make(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, min.y, true);
 
-	ret.list.push(object::rect(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, max.x));
-	ret.list.push(object::rect(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, min.x, true));
+	ret.sides[4] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, max.x);
+	ret.sides[5] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, min.x, true);
 
 	return ret;
 }
 
-aabb box::bbox(v2 t) const {
+aabb box::bbox(v2) const {
 
 	return {min, max};
 }
@@ -42,9 +42,9 @@ trace box::hit(const ray& r, v2 t) const {
 	// another pointer indirection to use object::list
 
 	trace ret;
-	f32 closest = t.y;		
-	for(const object& o : list) {
-		trace next = o.hit(r,{t.x,closest});
+	f32 closest = t.y;
+	for(const rect& re : sides) {
+		trace next = re.hit(r,{t.x,closest});
 		if(next.hit) {
 			ret = next;
 			closest = next.t;
@@ -64,21 +64,21 @@ rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip) {
 	return ret;
 }
 
-aabb rect::bbox(v2 t) const {
+aabb rect::bbox(v2) const {
 
 	v3 mi, ma;
 	switch(type) {
 	case plane::yz: {
-		mi = v3(w - 0.0001f, u);
-		ma = v3(w + 0.0001f, v);
+		mi = v3(w - 0.0001f, u.x, v.x);
+		ma = v3(w + 0.0001f, u.y, v.y);
 	} break;
 	case plane::xz: {
-		mi = v3(u.x, w - 0.0001f, u.y);
-		ma = v3(v.x, w + 0.0001f, v.y);
+		mi = v3(u.x, w - 0.0001f, v.x);
+		ma = v3(u.y, w - 0.0001f, v.y);
 	} break;
 	case plane::xy: {
-		mi = v3(u, w - 0.0001f);
-		ma = v3(v, w + 0.0001f);
+		mi = v3(u.x, v.x, w - 0.0001f);
+		ma = v3(u.y, v.y, w + 0.0001f);
 	} break;
 	}
 	return {mi, ma};
@@ -137,6 +137,7 @@ i16 bvh::node::populate(const vec<object>& list, vec<object>& objs, vec<node>& n
 		ret.box_ = objs[ret.left].bbox(t);
 
 		nodes.push(ret);
+		idx = (i16)(nodes.size - 1);
 
 	} else {
 		
@@ -202,7 +203,7 @@ trace bvh::hit(const ray& r, v2 t) const {
 	trace result;
 	
 	// Current node index
-	i32 idx = nodes[root].left;
+	i16 idx = nodes[root].left;
 
 	// Where we are visiting this node from
 	state s = state::parent;
@@ -272,7 +273,7 @@ trace bvh::hit(const ray& r, v2 t) const {
 			// Traversal complete
 			if(idx == root) return result;
 			
-			i32 p_idx = nodes[idx].parent;
+			i16 p_idx = nodes[idx].parent;
 			node parent = nodes[p_idx];
 
 			// Traverse right subtree

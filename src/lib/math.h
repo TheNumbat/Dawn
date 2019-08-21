@@ -519,6 +519,9 @@ inline f32 lerp(f32 min, f32 max, f32 dist) {
 inline f32 clamp(f32 f, f32 min, f32 max) {
 	return maxf(minf(f, max), min);
 }
+inline v3 clamp(v3 f, v3 min, v3 max) {
+	return vmax(vmin(f, max), min);
+}
 inline f32 safe(f32 f) {
 	return isnan(f) ? 0.0f : f;
 }

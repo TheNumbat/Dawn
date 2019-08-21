@@ -7,7 +7,7 @@ diffuse diffuse::make(texture t) {
 	return ret;
 }
 
-scatter diffuse::bsdf(const ray& incoming, const trace& surface) const {
+scatter diffuse::bsdf(const ray&, const trace& surface) const {
 	scatter ret;
 	ret.emitted = tex.sample(surface.uv, {});
 	ret.attenuation = {1.0f};

@@ -117,8 +117,8 @@ struct material {
 	
 	material(const material& o) {memcpy(this,&o,sizeof(material));}
 	material(const material&& o) {memcpy(this,&o,sizeof(material));}
-	void operator=(const material& o) {memcpy(this,&o,sizeof(material));}
-	void operator=(const material&& o) {memcpy(this,&o,sizeof(material));}
+	material& operator=(const material& o) {memcpy(this,&o,sizeof(material)); return *this;}
+	material& operator=(const material&& o) {memcpy(this,&o,sizeof(material)); return *this;}
 	material() {memset(this,0,sizeof(material));}
 	void destroy() {
 		switch(type) {

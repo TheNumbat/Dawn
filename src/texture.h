@@ -104,8 +104,8 @@ struct texture {
 	
 	texture(const texture& o) {memcpy(this,&o,sizeof(texture));}
 	texture(const texture&& o) {memcpy(this,&o,sizeof(texture));}
-	void operator=(const texture& o) {memcpy(this,&o,sizeof(texture));}
-	void operator=(const texture&& o) {memcpy(this,&o,sizeof(texture));}
+	texture& operator=(const texture& o) {memcpy(this,&o,sizeof(texture)); return *this;}
+	texture& operator=(const texture&& o) {memcpy(this,&o,sizeof(texture)); return *this;}
 	texture() {memset(this,0,sizeof(texture));}
 	void destroy() {
 		switch(type) {
