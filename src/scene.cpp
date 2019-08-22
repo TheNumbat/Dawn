@@ -218,7 +218,7 @@ object cornell_box::init(i32 w, i32 h) {
 
 	objs.push(object::rect(green, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 	objs.push(object::rect(red, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
-	objs.push(object::rect(light, plane::zx, {213.0f, 343.0f}, {227.0f, 332.0f}, 554.0f));
+	objs.push(object::rect(light, plane::zx, {227.0f, 332.0f}, {213.0f, 343.0f}, 554.0f));
 	
 	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
