@@ -23,7 +23,12 @@ lambertian lambertian::make(texture t) {
 
 scatter lambertian::bsdf(const ray& incoming, const trace& surface) const {
 	scatter ret;
-	v3 out = surface.pos + surface.normal + random_leunit();
+
+	// Flip normal when we hit the surface from the backface
+	v3 normal = surface.normal, dir = norm(incoming.dir);
+	if(dot(normal, dir) > 0.0f) normal = -normal;
+
+	v3 out = surface.pos + normal + random_leunit();
 	ret.out = {surface.pos, out - surface.pos, incoming.t};
 	ret.attenuation = tex.sample(surface.uv, surface.pos);
 	return ret;

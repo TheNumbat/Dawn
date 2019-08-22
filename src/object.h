@@ -22,7 +22,7 @@ enum class obj : u8 {
 
 enum class plane : u8 {
 	yz = 0,
-	xz = 1,
+	zx = 1,
 	xy = 2
 };
 

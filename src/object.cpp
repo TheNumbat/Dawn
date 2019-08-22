@@ -22,8 +22,8 @@ box box::make(i32 mat, v3 min, v3 max) {
 	ret.sides[0] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, max.z);
 	ret.sides[1] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, min.z, true);
 
-	ret.sides[2] = rect::make(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, max.y);
-	ret.sides[3] = rect::make(mat, plane::xz, {min.x, max.x}, {min.z, max.z}, min.y, true);
+	ret.sides[2] = rect::make(mat, plane::zx, {min.z, max.z}, {min.x, max.x}, max.y);
+	ret.sides[3] = rect::make(mat, plane::zx, {min.z, max.z}, {min.x, max.x}, min.y, true);
 
 	ret.sides[4] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, max.x);
 	ret.sides[5] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, min.x, true);
@@ -68,9 +68,9 @@ aabb rect::bbox(v2) const {
 		return {{w - 0.0001f, u.x, v.x},
 				{w + 0.0001f, u.y, v.y}};
 	} break;
-	case plane::xz: {
-		return {{u.x, w - 0.0001f, v.x},
-				{u.y, w + 0.0001f, v.y}};
+	case plane::zx: {
+		return {{v.x, w - 0.0001f, u.x},
+				{v.y, w + 0.0001f, u.y}};
 	} break;
 	case plane::xy: {
 		return {{u.x, v.x, w - 0.0001f},
@@ -94,16 +94,15 @@ trace rect::hit(const ray& r, v2 t) const {
 
 	if(t_pos < t.x || t_pos > t.y) return ret;
 
-	f32 u_pos = r.pos[u_idx] + t_pos * r.dir[u_idx];
-	f32 v_pos = r.pos[v_idx] + t_pos * r.dir[v_idx];
+	v3 at = r.get(t_pos);
 
-	if(u_pos < u.x || u_pos > u.y || v_pos < v.x || v_pos > v.y) return ret;
+	if(at[u_idx] < u.x || at[u_idx] > u.y || at[v_idx] < v.x || at[v_idx] > v.y) return ret;
 
 	ret.hit = true;
 	ret.t = t_pos;
 	ret.mat = mat;
-	ret.uv = {(u_pos - u.x) / (u.y - u.x), (v_pos - v.x) / (v.y - v.x)};
-	ret.pos = r.get(t_pos);
+	ret.uv = {(at[u_idx] - u.x) / (u.y - u.x), (at[v_idx] - v.x) / (v.y - v.x)};
+	ret.pos = at;
 	ret.normal[w_idx] = flip;
 
 	return ret;
