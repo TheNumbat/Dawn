@@ -161,10 +161,10 @@ union f32_lane {
 	f32_lane(i32 _v) {v = __casti_ps(__set1_epi32(_v));}
 	f32_lane(__lane _v) {v = _v;}
 
-	f32_lane(const f32_lane& o) {memcpy(this,&o,sizeof(f32_lane));}
-	f32_lane(const f32_lane&& o) {memcpy(this,&o,sizeof(f32_lane));}
-	inline f32_lane VEC operator=(const f32_lane& o) {memcpy(this,&o,sizeof(f32_lane)); return *this;}
-	inline f32_lane VEC operator=(const f32_lane&& o) {memcpy(this,&o,sizeof(f32_lane)); return *this;}
+	f32_lane(const f32_lane& o) {v = o.v;}
+	f32_lane(const f32_lane&& o) {v = o.v;}
+	inline f32_lane VEC operator=(const f32_lane& o) {v = o.v; return *this;}
+	inline f32_lane VEC operator=(const f32_lane&& o) {v = o.v; return *this;}
 };
 static_assert(sizeof(f32_lane) == LANE_WIDTH * 4, "sizeof(f32_lane) != LANE_WIDTH * 4");
 
@@ -315,6 +315,76 @@ union v3_lane {
 	inline v3_lane VEC operator=(const v3_lane&& o) {memcpy(this,&o,sizeof(v3_lane)); return *this;}
 };
 static_assert(sizeof(v3_lane) == LANE_WIDTH * 12, "sizeof(v3_lane) != LANE_WIDTH * 12");
+
+// NOTE(max): yes this is basically completely redundant to v3...could just
+// use a strong typedef with applicable functions (e.g. dot product, m4 mul),
+// but that is more confusing than just duplicating the type.
+union v4 {
+	struct {
+		f32 x, y, z, w;
+	};
+	__m128 v;
+	f32 a[4] = {};
+
+	void operator+=(v4 o) {v = _mm_add_ps(v, o.v);}
+	void operator-=(v4 o) {v = _mm_sub_ps(v, o.v);}
+	void operator*=(v4 o) {v = _mm_mul_ps(v, o.v);}
+	void operator/=(v4 o) {v = _mm_div_ps(v, o.v);}
+	void operator*=(f32 s) {v = _mm_mul_ps(v, _mm_set1_ps(s));}
+	void operator/=(f32 s) {v = _mm_div_ps(v, _mm_set1_ps(s));}
+	f32& operator[](i32 idx) {return a[idx];}
+	f32 operator[](i32 idx) const {return a[idx];}
+
+	v4() {}
+	v4(f32 _v) {v = _mm_set_ps(_v, _v, _v, _v);}
+	v4(v3 _v, f32 _w) {v = _mm_set_ps(_w, _v.z, _v.y, _v.x);}
+	v4(f32 _x, f32 _y, f32 _z, f32 _w) {v = _mm_set_ps(_w, _z, _y, _x);}
+	v4(__m128 p) {v = p;}
+
+	v4(const v4& o) {v = o.v;}
+	v4(const v4&& o) {v = o.v;}
+	inline v4 VEC operator=(const v4& o) {v = o.v; return *this;}
+	inline v4 VEC operator=(const v4&& o) {v = o.v; return *this;}
+};
+static_assert(sizeof(v4) == 16, "sizeof(v4) != 16");
+
+union m4;
+inline m4 operator*(m4 l, m4 r);
+
+union m4 {
+	f32 a[16] = {1, 0, 0, 0,
+				 0, 1, 0, 0,
+				 0, 0, 1, 0,
+				 0, 0, 0, 1}; 
+	v4 cols[4];
+	__m128 v[4];
+
+	void operator+=(m4 o) {v[0] = _mm_add_ps(v[0], o.v[0]);
+						   v[1] = _mm_add_ps(v[1], o.v[1]);
+						   v[2] = _mm_add_ps(v[2], o.v[2]);
+						   v[3] = _mm_add_ps(v[3], o.v[3]);}
+	void operator-=(m4 o) {v[0] = _mm_sub_ps(v[0], o.v[0]);
+						   v[1] = _mm_sub_ps(v[1], o.v[1]);
+						   v[2] = _mm_sub_ps(v[2], o.v[2]);
+						   v[3] = _mm_sub_ps(v[3], o.v[3]);}
+	void operator*=(m4 o) {*this = *this * o;}
+	void operator*=(f32 s) {__m128 mul = _mm_set1_ps(s); for(i32 i = 0; i < 4; i++) v[i] = _mm_mul_ps(v[i], mul);}
+	void operator/=(f32 s) {__m128 div = _mm_set1_ps(s); for(i32 i = 0; i < 4; i++) v[i] = _mm_div_ps(v[i], div);}
+
+	v4& operator[](i32 idx) {return cols[idx];}
+	v4 operator[](i32 idx) const {return cols[idx];}
+
+	m4() {}
+	m4(v4 c0, v4 c1, v4 c2, v4 c3) {cols[0] = c0; cols[1] = c1; cols[2] = c2; cols[3] = c3;}
+	m4(const m4& o) {memcpy(this,&o,sizeof(m4));}
+	m4(const m4&& o) {memcpy(this,&o,sizeof(m4));}
+	inline m4 VEC operator=(const m4& o) {memcpy(this,&o,sizeof(m4)); return *this;}
+	inline m4 VEC operator=(const m4&& o) {memcpy(this,&o,sizeof(m4)); return *this;}
+
+	static m4 zero;
+	static m4 I;
+};
+static_assert(sizeof(m4) == 64, "sizeof(m4) != 64");
 
 struct rand_state {
 	u32 x = 123456789;
@@ -1231,10 +1301,285 @@ struct perlin {
 };
 extern perlin g_perlin;
 
+inline v4 operator+(v4 l, v4 r) {
+	return {_mm_add_ps(l.v, r.v)};
+}
+inline v4 operator-(v4 l, v4 r) {
+	return {_mm_sub_ps(l.v, r.v)};
+}
+inline v4 operator*(v4 l, v4 r) {
+	return {_mm_mul_ps(l.v, r.v)};
+}
+inline v4 operator*(v4 l, f32 r) {
+	return {_mm_mul_ps(l.v, _mm_set1_ps(r))};
+}
+inline v4 operator*(f32 l, v4 r) {
+	return {_mm_mul_ps(_mm_set1_ps(l), r.v)};
+}
+inline v4 operator/(v4 l, v4 r) {
+	return {_mm_div_ps(l.v, r.v)};
+}
+inline v4 operator/(v4 l, f32 r) {
+	return {_mm_div_ps(l.v, _mm_set1_ps(r))};
+}
+inline v4 operator/(f32 l, v4 r) {
+	return {_mm_div_ps(_mm_set1_ps(l), r.v)};
+}
+inline f32 dot(v4 l, v4 r) {
+	return v4{_mm_dp_ps(l.v, r.v, 0xf1)}.x;
+}
+inline f32 lensq(v4 v) {
+	return dot(v, v);
+}
+inline f32 len(v4 v) {
+	return sqrtf(lensq(v));
+}
+inline v4 norm(v4 v) {
+	return v / len(v);
+}
+
+inline m4 transpose(m4 m) {
+	m4 ret;
+	for(i32 i = 0; i < 4; i++)
+		for(u8 j = 0; j < 4; j++)
+			ret[i][j] = m[j][i];
+	return ret;
+}
+inline m4 operator+(m4 l, m4 r) {
+	m4 ret;
+	ret.v[0] = _mm_add_ps(l.v[0], r.v[0]);
+	ret.v[1] = _mm_add_ps(l.v[1], r.v[1]);
+	ret.v[2] = _mm_add_ps(l.v[2], r.v[2]);
+	ret.v[3] = _mm_add_ps(l.v[3], r.v[3]);
+	return ret;
+}
+inline m4 operator-(m4 l, m4 r) {
+	m4 ret;
+	ret.v[0] = _mm_sub_ps(l.v[0], r.v[0]);
+	ret.v[1] = _mm_sub_ps(l.v[1], r.v[1]);
+	ret.v[2] = _mm_sub_ps(l.v[2], r.v[2]);
+	ret.v[3] = _mm_sub_ps(l.v[3], r.v[3]);
+	return ret;
+}
+inline m4 operator*(m4 l, m4 r) {
+	m4 ret;
+    for(i32 i = 0; i < 4; i++) {
+        ret.v[i] = _mm_add_ps(
+        _mm_add_ps(
+            _mm_mul_ps(_mm_set1_ps(r[i][0]), l.v[0]),
+            _mm_mul_ps(_mm_set1_ps(r[i][1]), l.v[1])), 
+       	_mm_add_ps(
+            _mm_mul_ps(_mm_set1_ps(r[i][2]), l.v[2]),
+            _mm_mul_ps(_mm_set1_ps(r[i][3]), l.v[3])));
+    }
+    return ret;
+}
+inline v4 operator*(m4 l, v4 r) {
+    m4 lT = transpose(l);
+    return {dot(lT.v[0], r), dot(lT.v[1], r), 
+    		dot(lT.v[2], r), dot(lT.v[3], r)};
+}
+inline m4 operator*(m4 l, f32 r) {
+	m4 ret;
+	__m128 mul = _mm_set1_ps(r);
+	ret.v[0] = _mm_mul_ps(l.v[0], mul);
+	ret.v[1] = _mm_mul_ps(l.v[1], mul);
+	ret.v[2] = _mm_mul_ps(l.v[2], mul);
+	ret.v[3] = _mm_mul_ps(l.v[3], mul);
+	return ret;
+}
+inline m4 operator/(m4 l, f32 r) {
+	m4 ret;
+	__m128 mul = _mm_set1_ps(r);
+	ret.v[0] = _mm_div_ps(l.v[0], mul);
+	ret.v[1] = _mm_div_ps(l.v[1], mul);
+	ret.v[2] = _mm_div_ps(l.v[2], mul);
+	ret.v[3] = _mm_div_ps(l.v[3], mul);
+	return ret;
+}
+inline m4 ortho(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f) {
+    m4 ret;
+    ret[0][0] = 2.0f / (r - l);
+    ret[1][1] = 2.0f / (t - b);
+    ret[2][2] = 2.0f / (n - f);
+    ret[3][0] = (-l - r) / (r - l);
+    ret[3][1] = (-b - t)  / (t - b);
+    ret[3][2] = - n / (f - n);
+    return ret;
+}
+inline m4 project(f32 fov, f32 ar, f32 n)
+{
+    float f = 1.0f / tanf(RADIANS(fov) / 2.0f);
+    m4 ret;
+    ret[0][0] = f / ar;
+    ret[1][1] = f;
+    ret[2][2] = 0.0f;
+    ret[3][3] = 0.0f;
+    ret[3][2] = n;
+    ret[2][3] = -1.0f;
+    return ret;
+}
+inline m4 translate(v3 v) {
+	m4 ret;
+	ret[3][0] = v[0];
+	ret[3][1] = v[1];
+	ret[3][2] = v[2];
+    return ret;
+}
+inline m4 rotate(f32 a, v3 axis) {
+	m4 ret;
+	f32 c = cosf(RADIANS(a));
+	f32 s = sinf(RADIANS(a));
+	
+	axis = norm(axis);
+	v3 temp = axis * (1.0f - c);
+
+	ret[0][0] = c + temp[0] * axis[0];
+	ret[0][1] = temp[0] * axis[1] + s * axis[2];
+	ret[0][2] = temp[0] * axis[2] - s * axis[1];
+	ret[1][0] = temp[1] * axis[0] - s * axis[2];
+	ret[1][1] = c + temp[1] * axis[1];
+	ret[1][2] = temp[1] * axis[2] + s * axis[0];
+	ret[2][0] = temp[2] * axis[0] + s * axis[1];
+	ret[2][1] = temp[2] * axis[1] - s * axis[0];
+	ret[2][2] = c + temp[2] * axis[2];
+
+	return ret;
+}
+inline m4 scale(v3 s) {
+	m4 ret;
+    ret[0][0] = s.x;
+    ret[1][1] = s.y;
+    ret[2][2] = s.z;
+    return ret;
+}
+inline m4 lookAt(v3 pos, v3 at, v3 up) {
+    m4 ret = m4::zero;
+
+    v3 F = norm(at - pos);
+    v3 S = norm(cross(F, up));
+    v3 U = cross(S, F);
+
+    ret[0][0] =  S.x;
+    ret[0][1] =  U.x;
+    ret[0][2] = -F.x;
+    ret[1][0] =  S.y;
+    ret[1][1] =  U.y;
+    ret[1][2] = -F.y;
+    ret[2][0] =  S.z;
+    ret[2][1] =  U.z;
+    ret[2][2] = -F.z;
+    ret[3][0] = -dot(S, pos);
+    ret[3][1] = -dot(U, pos);
+    ret[3][2] =  dot(F, pos);
+    ret[3][3] = 1.0f;
+
+    return ret;
+}
+
+// SSE matrix inverse from https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
+
+#define MakeShuffleMask(x,y,z,w)           (x | (y<<2) | (z<<4) | (w<<6))
+#define VecSwizzleMask(vec, mask)          _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(vec), mask))
+#define VecSwizzle(vec, x, y, z, w)        VecSwizzleMask(vec, MakeShuffleMask(x,y,z,w))
+#define VecSwizzle1(vec, x)                VecSwizzleMask(vec, MakeShuffleMask(x,x,x,x))
+#define VecSwizzle_0022(vec)               _mm_moveldup_ps(vec)
+#define VecSwizzle_1133(vec)               _mm_movehdup_ps(vec)
+#define VecShuffle(vec1, vec2, x,y,z,w)    _mm_shuffle_ps(vec1, vec2, MakeShuffleMask(x,y,z,w))
+#define VecShuffle_0101(vec1, vec2)        _mm_movelh_ps(vec1, vec2)
+#define VecShuffle_2323(vec1, vec2)        _mm_movehl_ps(vec2, vec1)
+inline __m128 Mat2Mul(__m128 vec1, __m128 vec2)
+{
+	return
+		_mm_add_ps(_mm_mul_ps(                     vec1, VecSwizzle(vec2, 0,3,0,3)),
+		           _mm_mul_ps(VecSwizzle(vec1, 1,0,3,2), VecSwizzle(vec2, 2,1,2,1)));
+}
+inline __m128 Mat2AdjMul(__m128 vec1, __m128 vec2)
+{
+	return
+		_mm_sub_ps(_mm_mul_ps(VecSwizzle(vec1, 3,3,0,0), vec2),
+		           _mm_mul_ps(VecSwizzle(vec1, 1,1,2,2), VecSwizzle(vec2, 2,3,0,1)));
+
+}
+inline __m128 Mat2MulAdj(__m128 vec1, __m128 vec2)
+{
+	return
+		_mm_sub_ps(_mm_mul_ps(                     vec1, VecSwizzle(vec2, 3,0,3,0)),
+		           _mm_mul_ps(VecSwizzle(vec1, 1,0,3,2), VecSwizzle(vec2, 2,1,2,1)));
+}
+inline m4 inverse(m4 inM)
+{
+	__m128 A = VecShuffle_0101(inM.v[0], inM.v[1]);
+	__m128 B = VecShuffle_2323(inM.v[0], inM.v[1]);
+	__m128 C = VecShuffle_0101(inM.v[2], inM.v[3]);
+	__m128 D = VecShuffle_2323(inM.v[2], inM.v[3]);
+
+	__m128 detSub = _mm_sub_ps(
+		_mm_mul_ps(VecShuffle(inM.v[0], inM.v[2], 0,2,0,2), VecShuffle(inM.v[1], inM.v[3], 1,3,1,3)),
+		_mm_mul_ps(VecShuffle(inM.v[0], inM.v[2], 1,3,1,3), VecShuffle(inM.v[1], inM.v[3], 0,2,0,2))
+	);
+	__m128 detA = VecSwizzle1(detSub, 0);
+	__m128 detB = VecSwizzle1(detSub, 1);
+	__m128 detC = VecSwizzle1(detSub, 2);
+	__m128 detD = VecSwizzle1(detSub, 3);
+	__m128 D_C = Mat2AdjMul(D, C);
+	__m128 A_B = Mat2AdjMul(A, B);
+	__m128 X_ = _mm_sub_ps(_mm_mul_ps(detD, A), Mat2Mul(B, D_C));
+	__m128 W_ = _mm_sub_ps(_mm_mul_ps(detA, D), Mat2Mul(C, A_B));
+
+	__m128 detM = _mm_mul_ps(detA, detD);
+	__m128 Y_ = _mm_sub_ps(_mm_mul_ps(detB, C), Mat2MulAdj(D, A_B));
+	__m128 Z_ = _mm_sub_ps(_mm_mul_ps(detC, B), Mat2MulAdj(A, D_C));
+	detM = _mm_add_ps(detM, _mm_mul_ps(detB, detC));
+
+	__m128 tr = _mm_mul_ps(A_B, VecSwizzle(D_C, 0,2,1,3));
+	tr = _mm_hadd_ps(tr, tr);
+	tr = _mm_hadd_ps(tr, tr);
+	detM = _mm_sub_ps(detM, tr);
+
+	const __m128 adjSignMask = _mm_setr_ps(1.f, -1.f, -1.f, 1.f);
+	__m128 rDetM = _mm_div_ps(adjSignMask, detM);
+
+	X_ = _mm_mul_ps(X_, rDetM);
+	Y_ = _mm_mul_ps(Y_, rDetM);
+	Z_ = _mm_mul_ps(Z_, rDetM);
+	W_ = _mm_mul_ps(W_, rDetM);
+
+	m4 r;
+	r.v[0] = VecShuffle(X_, Y_, 3,1,3,1);
+	r.v[1] = VecShuffle(X_, Y_, 2,0,2,0);
+	r.v[2] = VecShuffle(Z_, W_, 3,1,3,1);
+	r.v[3] = VecShuffle(Z_, W_, 2,0,2,0);
+	return r;
+}
+
 #ifdef MATH_IMPLEMENTATION
 
 perlin g_perlin;
 rand_state __state;
+
+m4 m4::zero = {{0.0f, 0.0f, 0.0f, 0.0f},
+			   {0.0f, 0.0f, 0.0f, 0.0f},
+			   {0.0f, 0.0f, 0.0f, 0.0f},
+			   {0.0f, 0.0f, 0.0f, 0.0f}};
+m4 m4::I = {{1.0f, 0.0f, 0.0f, 0.0f},
+			{0.0f, 1.0f, 0.0f, 0.0f},
+			{0.0f, 0.0f, 1.0f, 0.0f},
+			{0.0f, 0.0f, 0.0f, 1.0f}};
+
+std::ostream& operator<<(std::ostream& out, v4 r) {
+	out << "{" << r.x << "," << r.y << "," << r.z << "," << r.w << "}";
+	return out;
+}
+
+std::ostream& operator<<(std::ostream& out, m4 r) {
+	out << "{";
+	for(i32 i = 0; i < 4; i++) {
+		out << r.cols[i] << "," << std::endl;
+	}
+	out << "}";
+	return out;
+}
 
 std::ostream& operator<<(std::ostream& out, const v3 r) {
 	out << "{" << r.x << "," << r.y << "," << r.z << "}";

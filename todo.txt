@@ -1,10 +1,7 @@
 TODO:
 
 Resources:
-	rect_lane
-	box using rect_lane
 	raytracing the next week: page 40
-
 	start PBRT book
 	raytracing the rest of your life
 
@@ -31,8 +28,10 @@ Optimizations
 			cache boxes on all objects?
 
 		SIMD
-			sphere_moving_lane
 			aabb_lane
+			sphere_moving_lane
+			rect_lane
+			^ Previous two won't really be used in final tracer (focus on meshes), so omitting
 
 		looking into ray_lane again (didn't work first time, too divergent?? could have been buggy)
 	
