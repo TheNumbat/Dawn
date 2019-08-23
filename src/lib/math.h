@@ -349,7 +349,7 @@ union v4 {
 static_assert(sizeof(v4) == 16, "sizeof(v4) != 16");
 
 union m4;
-inline m4 operator*(m4 l, m4 r);
+inline m4 VEC operator*(m4 l, m4 r);
 
 union m4 {
 	f32 a[16] = {1, 0, 0, 0,
@@ -1301,51 +1301,70 @@ struct perlin {
 };
 extern perlin g_perlin;
 
-inline v4 operator+(v4 l, v4 r) {
+inline v4 VEC operator+(const v4 l, const v4 r) {
 	return {_mm_add_ps(l.v, r.v)};
 }
-inline v4 operator-(v4 l, v4 r) {
+inline v4 VEC operator-(const v4 l, const v4 r) {
 	return {_mm_sub_ps(l.v, r.v)};
 }
-inline v4 operator*(v4 l, v4 r) {
+inline v4 VEC operator*(const v4 l, const v4 r) {
 	return {_mm_mul_ps(l.v, r.v)};
 }
-inline v4 operator*(v4 l, f32 r) {
+inline v4 VEC operator*(const v4 l, f32 r) {
 	return {_mm_mul_ps(l.v, _mm_set1_ps(r))};
 }
-inline v4 operator*(f32 l, v4 r) {
+inline v4 VEC operator*(f32 l, const v4 r) {
 	return {_mm_mul_ps(_mm_set1_ps(l), r.v)};
 }
-inline v4 operator/(v4 l, v4 r) {
+inline v4 VEC operator/(const v4 l, const v4 r) {
 	return {_mm_div_ps(l.v, r.v)};
 }
-inline v4 operator/(v4 l, f32 r) {
+inline v4 VEC operator/(const v4 l, f32 r) {
 	return {_mm_div_ps(l.v, _mm_set1_ps(r))};
 }
-inline v4 operator/(f32 l, v4 r) {
+inline v4 VEC operator/(f32 l, const v4 r) {
 	return {_mm_div_ps(_mm_set1_ps(l), r.v)};
 }
-inline f32 dot(v4 l, v4 r) {
+inline f32 VEC dot(const v4 l, const v4 r) {
 	return v4{_mm_dp_ps(l.v, r.v, 0xf1)}.x;
 }
-inline f32 lensq(v4 v) {
+inline f32 VEC lensq(const v4 v) {
 	return dot(v, v);
 }
-inline f32 len(v4 v) {
+inline f32 VEC len(const v4 v) {
 	return sqrtf(lensq(v));
 }
-inline v4 norm(v4 v) {
+inline v4 VEC norm(const v4 v) {
 	return v / len(v);
 }
+inline bool VEC operator==(const v4 l, const v4 r) {
+	return _mm_movemask_ps(_mm_cmpeq_ps(l.v, r.v)) == 0xf;
+}
+inline bool VEC operator!=(const v4 l, const v4 r) {
+	return _mm_movemask_ps(_mm_cmpeq_ps(l.v, r.v)) != 0xf;
+}
 
-inline m4 transpose(m4 m) {
+inline bool VEC operator==(const m4 l, const m4 r) {
+	return l.cols[0] == r.cols[0] &&
+		   l.cols[1] == r.cols[1] &&
+		   l.cols[2] == r.cols[2] &&
+		   l.cols[3] == r.cols[3];
+}
+inline bool VEC operator!=(const m4 l, const m4 r) {
+	return l.cols[0] != r.cols[0] ||
+		   l.cols[1] != r.cols[1] ||
+		   l.cols[2] != r.cols[2] ||
+		   l.cols[3] != r.cols[3];
+}
+
+inline m4 VEC transpose(m4 m) {
 	m4 ret;
 	for(i32 i = 0; i < 4; i++)
 		for(u8 j = 0; j < 4; j++)
 			ret[i][j] = m[j][i];
 	return ret;
 }
-inline m4 operator+(m4 l, m4 r) {
+inline m4 VEC operator+(m4 l, m4 r) {
 	m4 ret;
 	ret.v[0] = _mm_add_ps(l.v[0], r.v[0]);
 	ret.v[1] = _mm_add_ps(l.v[1], r.v[1]);
@@ -1353,7 +1372,7 @@ inline m4 operator+(m4 l, m4 r) {
 	ret.v[3] = _mm_add_ps(l.v[3], r.v[3]);
 	return ret;
 }
-inline m4 operator-(m4 l, m4 r) {
+inline m4 VEC operator-(m4 l, m4 r) {
 	m4 ret;
 	ret.v[0] = _mm_sub_ps(l.v[0], r.v[0]);
 	ret.v[1] = _mm_sub_ps(l.v[1], r.v[1]);
@@ -1361,7 +1380,7 @@ inline m4 operator-(m4 l, m4 r) {
 	ret.v[3] = _mm_sub_ps(l.v[3], r.v[3]);
 	return ret;
 }
-inline m4 operator*(m4 l, m4 r) {
+inline m4 VEC operator*(m4 l, m4 r) {
 	m4 ret;
     for(i32 i = 0; i < 4; i++) {
         ret.v[i] = _mm_add_ps(
@@ -1375,11 +1394,10 @@ inline m4 operator*(m4 l, m4 r) {
     return ret;
 }
 inline v4 operator*(m4 l, v4 r) {
-    m4 lT = transpose(l);
-    return {dot(lT.v[0], r), dot(lT.v[1], r), 
-    		dot(lT.v[2], r), dot(lT.v[3], r)};
+    return (r.x * l.cols[0] + r.y * l.cols[1]) +
+    	   (r.z * l.cols[2] + r.w * l.cols[3]);
 }
-inline m4 operator*(m4 l, f32 r) {
+inline m4 VEC operator*(m4 l, f32 r) {
 	m4 ret;
 	__m128 mul = _mm_set1_ps(r);
 	ret.v[0] = _mm_mul_ps(l.v[0], mul);
@@ -1388,7 +1406,7 @@ inline m4 operator*(m4 l, f32 r) {
 	ret.v[3] = _mm_mul_ps(l.v[3], mul);
 	return ret;
 }
-inline m4 operator/(m4 l, f32 r) {
+inline m4 VEC operator/(m4 l, f32 r) {
 	m4 ret;
 	__m128 mul = _mm_set1_ps(r);
 	ret.v[0] = _mm_div_ps(l.v[0], mul);
@@ -1397,7 +1415,7 @@ inline m4 operator/(m4 l, f32 r) {
 	ret.v[3] = _mm_div_ps(l.v[3], mul);
 	return ret;
 }
-inline m4 ortho(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f) {
+inline m4 VEC ortho(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f) {
     m4 ret;
     ret[0][0] = 2.0f / (r - l);
     ret[1][1] = 2.0f / (t - b);
@@ -1407,7 +1425,7 @@ inline m4 ortho(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f) {
     ret[3][2] = - n / (f - n);
     return ret;
 }
-inline m4 project(f32 fov, f32 ar, f32 n)
+inline m4 VEC project(f32 fov, f32 ar, f32 n)
 {
     float f = 1.0f / tanf(RADIANS(fov) / 2.0f);
     m4 ret;
@@ -1419,14 +1437,14 @@ inline m4 project(f32 fov, f32 ar, f32 n)
     ret[2][3] = -1.0f;
     return ret;
 }
-inline m4 translate(v3 v) {
+inline m4 VEC translate(v3 v) {
 	m4 ret;
 	ret[3][0] = v[0];
 	ret[3][1] = v[1];
 	ret[3][2] = v[2];
     return ret;
 }
-inline m4 rotate(f32 a, v3 axis) {
+inline m4 VEC rotate(f32 a, v3 axis) {
 	m4 ret;
 	f32 c = cosf(RADIANS(a));
 	f32 s = sinf(RADIANS(a));
@@ -1446,14 +1464,14 @@ inline m4 rotate(f32 a, v3 axis) {
 
 	return ret;
 }
-inline m4 scale(v3 s) {
+inline m4 VEC scale(v3 s) {
 	m4 ret;
     ret[0][0] = s.x;
     ret[1][1] = s.y;
     ret[2][2] = s.z;
     return ret;
 }
-inline m4 lookAt(v3 pos, v3 at, v3 up) {
+inline m4 VEC look_at(v3 pos, v3 at, v3 up) {
     m4 ret = m4::zero;
 
     v3 F = norm(at - pos);
@@ -1488,26 +1506,26 @@ inline m4 lookAt(v3 pos, v3 at, v3 up) {
 #define VecShuffle(vec1, vec2, x,y,z,w)    _mm_shuffle_ps(vec1, vec2, MakeShuffleMask(x,y,z,w))
 #define VecShuffle_0101(vec1, vec2)        _mm_movelh_ps(vec1, vec2)
 #define VecShuffle_2323(vec1, vec2)        _mm_movehl_ps(vec2, vec1)
-inline __m128 Mat2Mul(__m128 vec1, __m128 vec2)
+inline __m128 VEC Mat2Mul(__m128 vec1, __m128 vec2)
 {
 	return
 		_mm_add_ps(_mm_mul_ps(                     vec1, VecSwizzle(vec2, 0,3,0,3)),
 		           _mm_mul_ps(VecSwizzle(vec1, 1,0,3,2), VecSwizzle(vec2, 2,1,2,1)));
 }
-inline __m128 Mat2AdjMul(__m128 vec1, __m128 vec2)
+inline __m128 VEC Mat2AdjMul(__m128 vec1, __m128 vec2)
 {
 	return
 		_mm_sub_ps(_mm_mul_ps(VecSwizzle(vec1, 3,3,0,0), vec2),
 		           _mm_mul_ps(VecSwizzle(vec1, 1,1,2,2), VecSwizzle(vec2, 2,3,0,1)));
 
 }
-inline __m128 Mat2MulAdj(__m128 vec1, __m128 vec2)
+inline __m128 VEC Mat2MulAdj(__m128 vec1, __m128 vec2)
 {
 	return
 		_mm_sub_ps(_mm_mul_ps(                     vec1, VecSwizzle(vec2, 3,0,3,0)),
 		           _mm_mul_ps(VecSwizzle(vec1, 1,0,3,2), VecSwizzle(vec2, 2,1,2,1)));
 }
-inline m4 inverse(m4 inM)
+inline m4 VEC inverse(m4 inM)
 {
 	__m128 A = VecShuffle_0101(inM.v[0], inM.v[1]);
 	__m128 B = VecShuffle_2323(inM.v[0], inM.v[1]);

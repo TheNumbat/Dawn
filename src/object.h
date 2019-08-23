@@ -185,6 +185,10 @@ private:
 
 struct object {
 	obj type = obj::none;
+
+	m4 transform;
+	bool do_transform = false;
+
 	union {
 		bvh b;
 		object_list l;
@@ -196,52 +200,45 @@ struct object {
 	};
 
 	// NOTE(max): takes ownership
-	static object list(vec<object>& objs) {
-		object ret;
-		ret.type = obj::list;
+	static object list(vec<object>& objs, m4 t = m4::I) {
+		object ret(obj::list, t);
 		ret.l = object_list::make(objs);
 		return ret;
 	}
-	static object box(i32 mat, v3 min, v3 max) {
-		object ret;
-		ret.type = obj::box;
+	static object box(i32 mat, v3 min, v3 max, m4 t = m4::I) {
+		object ret(obj::box, t);
 		ret.bx = box::make(mat, min, max);
 		return ret;
 	}
-	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w, bool f = false) {
-		object ret;
-		ret.type = obj::rect;
+	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w, bool f = false, m4 t = m4::I) {
+		object ret(obj::rect, t);
 		ret.re = rect::make(mat, type, u, v, w, f);
 		return ret;
 	}
-	static object bvh(vec<object> objs, v2 t) {
-		object ret;
-		ret.type = obj::bvh;
+	static object bvh(vec<object> objs, v2 t, m4 tr = m4::I) {
+		object ret(obj::bvh, tr);
 		ret.b = bvh::make(objs, t);
 		return ret;
 	}
 	static object bvh(vec<object> objs, v2 t, 
-					  i32 leaf_span, std::function<object(vec<object>)> create_leaf) {
-		object ret;
-		ret.type = obj::bvh;
+					  i32 leaf_span, std::function<object(vec<object>)> create_leaf,
+					  m4 tr = m4::I) {
+		object ret(obj::bvh, tr);
 		ret.b = bvh::make(objs, t, leaf_span, create_leaf);
 		return ret;
 	}
-	static object sphere(i32 mat, v3 pos, f32 rad) {
-		object ret;
-		ret.type = obj::sphere;
+	static object sphere(i32 mat, v3 pos, f32 rad, m4 t = m4::I) {
+		object ret(obj::sphere, t);
 		ret.s = sphere::make(pos, rad, mat);
 		return ret;
 	}
-	static object sphere_moving(i32 mat, v3 pos0, v3 pos1, f32 rad, v2 t) {
-		object ret;
-		ret.type = obj::sphere_moving;
+	static object sphere_moving(i32 mat, v3 pos0, v3 pos1, f32 rad, v2 t, m4 tr = m4::I) {
+		object ret(obj::sphere_moving, tr);
 		ret.sm = sphere_moving::make(pos0,pos1,rad,mat,t);
 		return ret;
 	}
-	static object sphere_lane(const f32_lane& mat, const v3_lane& pos, const f32_lane& rad) {
-		object ret;
-		ret.type = obj::sphere_lane;
+	static object sphere_lane(const f32_lane& mat, const v3_lane& pos, const f32_lane& rad, m4 t = m4::I) {
+		object ret(obj::sphere_lane, t);
 		ret.sl = sphere_lane::make(pos,rad,mat);
 		return ret;
 	}
@@ -272,11 +269,16 @@ struct object {
 		return {};
 	}
 	
+	object(obj o, m4 t) {
+		type = o;
+		transform = t;
+		do_transform = t != m4::I;
+	}
+	object() {memset(this,0,sizeof(object));}
 	object(const object& o) {memcpy(this,&o,sizeof(object));}
 	object(const object&& o) {memcpy(this,&o,sizeof(object));}
 	object& operator=(const object& o) {memcpy(this,&o,sizeof(object)); return *this;}
 	object& operator=(const object&& o) {memcpy(this,&o,sizeof(object)); return *this;}
-	object() {memset(this,0,sizeof(object));}
 	void destroy() {
 		switch(type) {
 		case obj::bvh: b.destroy(); break;
