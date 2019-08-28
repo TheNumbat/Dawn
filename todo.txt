@@ -1,7 +1,6 @@
 TODO:
 
-Fixing final scene:
-	camera view
+Final Scene
 	noise texture is wrong
 	global fog is gone
 	subsurface sphere is transparent

@@ -64,7 +64,7 @@ private:
 
 struct rect {
 
-	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip = false);
+	static rect make(i32 mat, plane type, v2 u, v2 v, f32 w);
 	void destroy() {}
 
 	aabb bbox(v2 t) const;
@@ -73,7 +73,6 @@ struct rect {
 private:
 	v2 u, v;
 	f32 w = 0.0f;
-	f32 flip = 1.0f;
 	i32 mat = 0;
 	plane type = plane::xy;
 };
@@ -227,9 +226,9 @@ struct object {
 		ret.bx = box::make(mat, min, max);
 		return ret;
 	}
-	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w, bool f = false, m4 t = m4::I) {
+	static object rect(i32 mat, plane type, v2 u, v2 v, f32 w, m4 t = m4::I) {
 		object ret(obj::rect, t);
-		ret.re = rect::make(mat, type, u, v, w, f);
+		ret.re = rect::make(mat, type, u, v, w);
 		return ret;
 	}
 	static object bvh(vec<object> objs, v2 t, m4 tr = m4::I) {

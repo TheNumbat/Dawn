@@ -216,19 +216,23 @@ object cornell_box::init(i32 w, i32 h) {
 
 	vec<object> objs;
 
-	objs.push(object::rect(green, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
+	objs.push(object::rect(green, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f));
 	objs.push(object::rect(red, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
 	objs.push(object::rect(light, plane::zx, {113.0f, 443.0f}, {127.0f, 432.0f}, 554.0f));
 	
-	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
+	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f));
 	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
-	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
+	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f));
 
-	box0 = object::box(white, {}, {165.0f, 165.0f, 165.0f}, translate({130.0f, 0.0f, 65.0f}) * rotate(-18.0f, {0.0f, 1.0f, 0.0f}));
+	dial = mats.add(material::dielectric(1.5f));
+
+	box0 = object::box(dial, {}, {165.0f, 165.0f, 165.0f}, translate({130.0f, 0.0f, 65.0f}) * rotate(-18.0f, {0.0f, 1.0f, 0.0f}));
 	box1 = object::box(white, {}, {165.0f, 330.0f, 165.0f}, translate({265.0f, 0.0f, 295.0f}) * rotate(15.0f, {0.0f, 1.0f, 0.0f}));
 
 	white_vol = mats.add(material::isotropic(texture::constant({1.0f})));
 	black_vol = mats.add(material::isotropic(texture::constant({})));
+
+	objs.push(box0);
 
 	objs.push(object::volume(white_vol, 0.01f, &box0));
 	objs.push(object::volume(black_vol, 0.01f, &box1));
@@ -307,7 +311,7 @@ object ps_showcase::init(i32 w, i32 h) {
 	objs.push(object::sphere(mtl, {0.0f, 150.0f, 145.0f}, 50.0f));
 
 	bound0 = object::sphere(dial, {360.0f, 150.0f, 145.0f}, 70.0f);
-	bound1 = object::sphere(dial, {}, 5000.0f);
+	bound1 = object::sphere(0, {}, 5000.0f);
 
 	objs.push(bound0);
 

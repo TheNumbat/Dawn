@@ -60,8 +60,8 @@ struct cornell_box {
 	materal_cache mats;
 
 private:
-	i32 red, white, green, light;
-	i32 white_vol, black_vol;
+	i32 red = 0, white = 0, green = 0, light = 0, dial = 0;
+	i32 white_vol = 0, black_vol = 0;
 	object box0, box1;
 };
 
@@ -104,5 +104,5 @@ private:
 	object scene_obj;
 	i32 max_depth = 16;
 
-	ps_showcase def;
+	cornell_box def;
 };

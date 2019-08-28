@@ -90,12 +90,12 @@ f32 dielectric::schlick(f32 cos) const {
 scatter dielectric::bsdf(const ray& incoming, const trace& surface) const {
 	
 	scatter ret;
-	v3 reflected = reflect(incoming.dir,surface.normal);
+	v3 reflected = reflect(incoming.dir, surface.normal);
 	
 	v3 n_out;
 	f32 iout_iin, cos;
 
-	f32 idn = dot(norm(incoming.dir),surface.normal);
+	f32 idn = dot(norm(incoming.dir), surface.normal);
 	if(idn > 0.0f) {
 		iout_iin = index;
 		n_out = -surface.normal;
@@ -107,7 +107,7 @@ scatter dielectric::bsdf(const ray& incoming, const trace& surface) const {
 	}
 
 	f32 refract_prob;
-	refract_ refracted = refract(incoming.dir,n_out,iout_iin);
+	refract_ refracted = refract(incoming.dir, n_out, iout_iin);
 	if(!refracted.internal) {
 		refract_prob = schlick(cos);
 	} else {

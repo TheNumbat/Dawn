@@ -21,18 +21,19 @@ trace trace::min(const trace& l, const trace& r) {
 }
 
 box box::make(i32 mat, v3 min, v3 max) {
+
 	box ret;
 	ret.min = min;
 	ret.max = max;
 
 	ret.sides[0] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, max.z);
-	ret.sides[1] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, min.z, true);
+	ret.sides[1] = rect::make(mat, plane::xy, {min.x, max.x}, {min.y, max.y}, min.z);
 
 	ret.sides[2] = rect::make(mat, plane::zx, {min.z, max.z}, {min.x, max.x}, max.y);
-	ret.sides[3] = rect::make(mat, plane::zx, {min.z, max.z}, {min.x, max.x}, min.y, true);
+	ret.sides[3] = rect::make(mat, plane::zx, {min.z, max.z}, {min.x, max.x}, min.y);
 
 	ret.sides[4] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, max.x);
-	ret.sides[5] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, min.x, true);
+	ret.sides[5] = rect::make(mat, plane::yz, {min.y, max.y}, {min.z, max.z}, min.x);
 
 	return ret;
 }
@@ -101,14 +102,13 @@ trace volume::hit(const ray& r, v2 t) const {
 	return ret;
 }
 
-rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip) {
+rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w) {
 	rect ret;
 	ret.type = type;
 	ret.mat = mat;
 	ret.u = u;
 	ret.v = v;
 	ret.w = w;
-	ret.flip = flip ? -1.0f : 1.0f;
 	return ret;
 }
 
@@ -154,7 +154,9 @@ trace rect::hit(const ray& r, v2 t) const {
 	ret.mat = mat;
 	ret.uv = {(at[u_idx] - u.x) / (u.y - u.x), (at[v_idx] - v.x) / (v.y - v.x)};
 	ret.pos = at;
-	ret.normal[w_idx] = flip;
+
+	// NOTE(max): double sided plane
+	ret.normal[w_idx] = dot(ret.normal, r.dir) > 0.0f ? 1.0f : -1.0f;
 
 	return ret;
 }
