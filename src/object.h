@@ -17,7 +17,8 @@ enum class obj : u8 {
 	sphere_moving,
 	sphere_lane,
 	rect,
-	box
+	box,
+	volume
 };
 
 enum class plane : u8 {
@@ -45,6 +46,20 @@ struct aabb {
 	static aabb enclose(const aabb& l, const aabb& r);
 	bool hit(const ray& incoming, v2 t) const;
 	void transform(m4 trans);
+};
+
+struct volume {
+
+	static volume make(i32 phase_mat, f32 density, object* bound);
+	void destroy() {}
+
+	aabb bbox(v2 t) const;
+	trace hit(const ray& r, v2 t) const;
+
+private:
+	object* bound = null;
+	f32 density = 0.0f;
+	i32 phase_mat = 0;
 };
 
 struct rect {
@@ -198,6 +213,7 @@ struct object {
 		sphere_lane sl;
 		rect re;
 		box bx;
+		volume v;
 	};
 
 	// NOTE(max): takes ownership
@@ -243,6 +259,12 @@ struct object {
 		ret.sl = sphere_lane::make(pos,rad,mat);
 		return ret;
 	}
+	static object volume(i32 phase_mat, f32 density, object* bound, m4 t = m4::I) {
+		object ret(obj::volume, t);
+		ret.v = volume::make(phase_mat, density, bound);
+		return ret;
+	}
+
 	trace hit(ray r, v2 t) const {
 
 		if(do_trans) r.transform(itrans);
@@ -255,6 +277,7 @@ struct object {
 		case obj::list: ret = l.hit(r, t); break;
 		case obj::rect: ret = re.hit(r, t); break;
 		case obj::sphere: ret = s.hit(r, t); break;
+		case obj::volume: ret = v.hit(r, t); break;
 		case obj::sphere_lane: ret = sl.hit(r, t); break;
 		case obj::sphere_moving: ret = sm.hit(r, t); break;
 		default: assert(false);
@@ -273,6 +296,7 @@ struct object {
 		case obj::list: ret = l.bbox(t); break;
 		case obj::rect: ret = re.bbox(t); break;
 		case obj::sphere: ret = s.bbox(t); break;
+		case obj::volume: ret = v.bbox(t); break;
 		case obj::sphere_lane: ret = sl.bbox(t); break;
 		case obj::sphere_moving: ret = sm.bbox(t); break;
 		default: assert(false);
@@ -298,11 +322,12 @@ struct object {
 		switch(type) {
 		case obj::bvh: b.destroy(); break;
 		case obj::list: l.destroy(); break;
+		case obj::box: bx.destroy(); break;
+		case obj::rect: re.destroy(); break;
 		case obj::sphere: s.destroy(); break;
+		case obj::volume: v.destroy(); break;
 		case obj::sphere_lane: sl.destroy(); break;
 		case obj::sphere_moving: sm.destroy(); break;
-		case obj::rect: re.destroy(); break;
-		case obj::box: bx.destroy(); break;
 		default: assert(false);
 		}
 	}

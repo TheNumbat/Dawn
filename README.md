@@ -6,7 +6,7 @@ Learning about path tracing. Focusing on realism + performance, hopefully with a
 
 Current features:
 - [Ray Tracing in a Weekend](http://www.realtimerendering.com/raytracing/Ray%20Tracing%20in%20a%20Weekend.pdf)
-- \[WIP\] [Ray Tracing: the Next Week](http://www.realtimerendering.com/raytracing/Ray%20Tracing_%20The%20Next%20Week.pdf)
+- [Ray Tracing: the Next Week](http://www.realtimerendering.com/raytracing/Ray%20Tracing_%20The%20Next%20Week.pdf)
 - Multi-threaded rendering
 - SIMD accelerated math + intersection testing
 - GUI/CLI interfaces

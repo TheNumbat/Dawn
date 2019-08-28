@@ -212,20 +212,26 @@ object cornell_box::init(i32 w, i32 h) {
 	red = mats.add(material::lambertian(texture::constant({0.65f, 0.05f, 0.05f})));
 	white = mats.add(material::lambertian(texture::constant({0.73f, 0.73f, 0.73f})));
 	green = mats.add(material::lambertian(texture::constant({0.12f, 0.45f, 0.15f})));
-	light = mats.add(material::diffuse(texture::constant({15.0f})));
+	light = mats.add(material::diffuse(texture::constant({7.0f})));
 
 	vec<object> objs;
 
 	objs.push(object::rect(green, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 	objs.push(object::rect(red, plane::yz, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
-	objs.push(object::rect(light, plane::zx, {227.0f, 332.0f}, {213.0f, 343.0f}, 554.0f));
+	objs.push(object::rect(light, plane::zx, {113.0f, 443.0f}, {127.0f, 432.0f}, 554.0f));
 	
 	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
 	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 
-	objs.push(object::box(white, {}, {165.0f, 165.0f, 165.0f}, translate({130.0f, 0.0f, 65.0f}) * rotate(-18.0f, {0.0f, 1.0f, 0.0f})));
-	objs.push(object::box(white, {}, {165.0f, 330.0f, 165.0f}, translate({265.0f, 0.0f, 295.0f}) * rotate(15.0f, {0.0f, 1.0f, 0.0f})));
+	box0 = object::box(white, {}, {165.0f, 165.0f, 165.0f}, translate({130.0f, 0.0f, 65.0f}) * rotate(-18.0f, {0.0f, 1.0f, 0.0f}));
+	box1 = object::box(white, {}, {165.0f, 330.0f, 165.0f}, translate({265.0f, 0.0f, 295.0f}) * rotate(15.0f, {0.0f, 1.0f, 0.0f}));
+
+	white_vol = mats.add(material::isotropic(texture::constant({1.0f})));
+	black_vol = mats.add(material::isotropic(texture::constant({})));
+
+	objs.push(object::volume(white_vol, 0.01f, &box0));
+	objs.push(object::volume(black_vol, 0.01f, &box1));
 
 	object ret = object::bvh(objs, cam.time);
 	objs.destroy();

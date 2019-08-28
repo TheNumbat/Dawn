@@ -71,6 +71,16 @@
 #define RADIANS(v) (v * (PI32 / 180.0f)) 
 #define DEGREES(v) (v * (180.0f / PI32)) 
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
+#define min1(l,r) ((l) < (r) ? (l) : (r))
+#define max1(l,r) ((l) > (r) ? (l) : (r))
+
 union v2 {
 	struct {
 		f32 x, y;

@@ -56,6 +56,51 @@ trace box::hit(const ray& r, v2 t) const {
 	return ret;	
 }
 
+volume volume::make(i32 phase_mat, f32 density, object* bound) {
+	volume ret;
+	ret.phase_mat = phase_mat;
+	ret.density = density;
+	ret.bound = bound;
+	return ret;
+}
+
+aabb volume::bbox(v2 t) const {
+	return bound->bbox(t);
+}
+
+trace volume::hit(const ray& r, v2 t) const {
+
+	trace ret;
+
+	trace b0 = bound->hit(r, {-FLT_MAX, FLT_MAX});
+	if(b0.hit) {
+
+		trace b1 = bound->hit(r, {b0.t + 0.0001f, FLT_MAX});
+		if(b1.hit) {
+
+			b0.t = max1(b0.t, t.x);
+			b1.t = min1(b1.t, t.y);
+			if(b0.t >= b1.t) return ret;
+
+			b0.t = max1(b0.t, 0.0f);
+			
+			f32 dlen = len(r.dir);
+			f32 d = (b1.t - b0.t) * dlen;
+			f32 h = - (1.0f / density) * logf(randomf());
+
+			if(h < d) {
+
+				ret.hit = true;
+				ret.t = b1.t + h / dlen;
+				ret.pos = r.get(ret.t);
+				ret.mat = phase_mat;
+			}
+		}
+	}
+
+	return ret;
+}
+
 rect rect::make(i32 mat, plane type, v2 u, v2 v, f32 w, bool flip) {
 	rect ret;
 	ret.type = type;

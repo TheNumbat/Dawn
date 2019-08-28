@@ -1,6 +1,19 @@
 
 #include "material.h"
 
+isotropic isotropic::make(texture t) {
+	isotropic ret;
+	ret.tex = t;
+	return ret;
+}
+
+scatter isotropic::bsdf(const ray& incoming, const trace& surface) const {
+	scatter ret;
+	ret.out = {surface.pos, random_leunit(), incoming.t};
+	ret.attenuation = tex.sample(surface.uv, surface.pos);
+	return ret;
+}
+
 diffuse diffuse::make(texture t) {
 	diffuse ret;
 	ret.tex = t;

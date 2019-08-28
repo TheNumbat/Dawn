@@ -10,13 +10,25 @@ enum class mat : u8 {
 	lambertian,
 	metal,
 	dielectric,
-	diffuse
+	diffuse,
+	isotropic
 };
 
 struct scatter {
 	ray out;
 	bool absorbed = false;
 	v3 attenuation, emitted;
+};
+
+struct isotropic {
+
+	static isotropic make(texture t);
+	void destroy() {tex.destroy();}
+
+	scatter bsdf(const ray& incoming, const trace& surface) const;
+
+private:
+	texture tex;
 };
 
 struct diffuse {
@@ -79,6 +91,7 @@ struct material {
 		metal m;
 		dielectric d;
 		diffuse df;
+		isotropic iso;
 	};
 	static material diffuse(texture t) {
 		material ret;
@@ -104,12 +117,20 @@ struct material {
 		ret.d = dielectric::make(index);
 		return ret;
 	}
+	static material isotropic(texture t) {
+		material ret;
+		ret.type = mat::isotropic;
+		ret.iso = isotropic::make(t);
+		return ret;
+	}
+
 	scatter bsdf(const ray& incoming, const trace& surface) const {
 		switch(type) {
-		case mat::lambertian: return l.bsdf(incoming,surface);
-		case mat::metal: return m.bsdf(incoming,surface);
-		case mat::dielectric: return d.bsdf(incoming,surface);
-		case mat::diffuse: return df.bsdf(incoming,surface);
+		case mat::metal: return m.bsdf(incoming, surface);
+		case mat::diffuse: return df.bsdf(incoming, surface);
+		case mat::lambertian: return l.bsdf(incoming, surface);
+		case mat::dielectric: return d.bsdf(incoming, surface);
+		case mat::isotropic: return iso.bsdf(incoming, surface);
 		default: assert(false);
 		}
 		return {};
@@ -122,10 +143,11 @@ struct material {
 	material() {memset(this,0,sizeof(material));}
 	void destroy() {
 		switch(type) {
-		case mat::lambertian: l.destroy(); break;
 		case mat::metal: m.destroy(); break;
-		case mat::dielectric: d.destroy(); break;
 		case mat::diffuse: df.destroy(); break;
+		case mat::dielectric: d.destroy(); break;
+		case mat::lambertian: l.destroy(); break;
+		case mat::isotropic: iso.destroy(); break;
 		default: assert(false);
 		}
 	}

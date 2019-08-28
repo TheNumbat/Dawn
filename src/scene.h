@@ -61,6 +61,8 @@ struct cornell_box {
 
 private:
 	i32 red, white, green, light;
+	i32 white_vol, black_vol;
+	object box0, box1;
 };
 
 struct planet_scene {
