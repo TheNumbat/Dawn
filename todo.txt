@@ -1,5 +1,11 @@
 TODO:
 
+Fixing final scene:
+	camera view
+	noise texture is wrong
+	global fog is gone
+	subsurface sphere is transparent
+
 Resources:
 	reading PBRT
 	raytracing the rest of your life

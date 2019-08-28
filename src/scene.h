@@ -65,6 +65,20 @@ private:
 	object box0, box1;
 };
 
+struct ps_showcase {
+
+	object init(i32 w, i32 h);
+	void destroy();
+
+	camera cam;
+	materal_cache mats;
+
+private:
+	i32 white = 0, ground = 0, light = 0, moving = 0, dial = 0, mtl = 0;
+	i32 vol0 = 0, vol1 = 0, mars = 0, noise = 0;
+	object bound0, bound1;
+};
+
 struct planet_scene {
 	
 	object init(i32 w, i32 h);
@@ -90,5 +104,5 @@ private:
 	object scene_obj;
 	i32 max_depth = 16;
 
-	cornell_box def;
+	ps_showcase def;
 };

@@ -269,3 +269,88 @@ void planet_scene::destroy() {
 	cam = {};
 	flat = lamb = light = 0;
 }
+
+object ps_showcase::init(i32 w, i32 h) {
+
+	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 50.0f, 0.0f, {0.0f, 1.0f});
+	mats.clear();
+
+	vec<object> objs;
+
+	white = mats.add(material::lambertian(texture::constant({0.73f, 0.73f, 0.73f})));
+	ground = mats.add(material::lambertian(texture::constant({0.48f, 0.83f, 0.53f})));
+
+	for(i32 i = 0; i < 20; i++) {
+		for(i32 j = 0; j < 20; j++) {
+			
+			f32 d = 100.0f;
+			v3 xyz = {-1000.0f + i * d, 0.0f, -1000.0f + j * d};
+			v3 xyz1 = {xyz.x + d, 100.0f * (randomf() + 0.01f), xyz.z + d};
+
+			objs.push(object::box(ground, xyz, xyz1));
+		}
+	}
+
+	light = mats.add(material::diffuse(texture::constant({7.0f})));
+
+	objs.push(object::rect(light, plane::zx, {147.0f, 412.0f}, {123.0f, 423.0f}, 554.0f));
+
+	v3 center(400.0f, 400.0f, 200.0f);
+
+	moving = mats.add(material::lambertian(texture::constant({0.7f, 0.3f, 0.1f})));
+	mtl    = mats.add(material::metal({0.8f, 0.8f, 0.9f}, 10.0f));
+	dial   = mats.add(material::dielectric(1.5f));
+
+	objs.push(object::sphere_moving(moving, center, center + v3{30.0f, 0.0f, 0.0f}, 50.0f, {0.0f, 1.0f}));
+
+	objs.push(object::sphere(dial, {260.0f, 150.0f, 45.0f}, 50.0f));
+	objs.push(object::sphere(mtl, {0.0f, 150.0f, 145.0f}, 50.0f));
+
+	bound0 = object::sphere(dial, {360.0f, 150.0f, 145.0f}, 70.0f);
+	bound1 = object::sphere(dial, {}, 5000.0f);
+
+	objs.push(bound0);
+
+	vol0 = mats.add(material::isotropic(texture::constant({0.2f, 0.4f, 0.9f})));
+	vol1 = mats.add(material::isotropic(texture::constant({1.0f})));
+
+	objs.push(object::volume(vol0, 0.2f, &bound0));
+	objs.push(object::volume(vol1, 0.0001f, &bound1));
+
+	mars  = mats.add(material::lambertian(texture::image("mars.jpg")));
+	noise = mats.add(material::lambertian(texture::noise({}, 0.1f)));
+
+	objs.push(object::sphere(mars, {400.0f, 200.0f, 400.0f}, 100.0f));
+	objs.push(object::sphere(noise, {220.0f, 280.0f, 300.0f}, 80.0f));
+
+	vec<object> spheres;
+
+	for(i32 i = 0; i < 1000; i++) {
+		spheres.push(object::sphere(white, 165.0f * abs(randomvec()), 10.0f));
+	}
+
+	objs.push(object::bvh(spheres, cam.time, LANE_WIDTH, [](vec<object> list) -> object {
+
+		sphere_lane_builder builder;
+
+		for(const object& o : list) {
+			builder.push(o);
+		}
+
+		return builder.finish();
+	}, translate({-100.0f, 270.0f, 395.0f}) * rotate(15.0f, {0.0f, 1.0f, 0.0f})));
+
+	object ret = object::bvh(objs, cam.time);
+
+	spheres.destroy();
+	objs.destroy();
+	return ret;
+}
+
+void ps_showcase::destroy() {
+	mats.destroy();
+	cam = {};
+	white = ground = light = moving = dial = mtl = 0;
+	vol0 = vol1 = mars = noise = 0;
+	bound0 = bound1 = {};
+}
