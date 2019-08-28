@@ -37,7 +37,7 @@ noise noise::make(v3 loc, f32 scale) {
 
 v3 noise::sample(v2, v3 p) const {
 	p += loc;
-	return 0.5f * (1.0f + sin(scale * p.x + 10.0f * g_perlin.turb(p, 7)));
+	return 0.5f * (1.0f + sin(scale * p.x + 5.0f * g_perlin.turb(scale * p, 7)));
 }
 
 image image::make(std::string file) {

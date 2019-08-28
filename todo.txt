@@ -1,9 +1,9 @@
 TODO:
 
 Final Scene
-	noise texture is wrong
+	fog inside another object doesn't work
 	global fog is gone
-	subsurface sphere is transparent
+	looks like starting inside volume doesn't work
 
 Resources:
 	reading PBRT

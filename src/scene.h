@@ -104,5 +104,5 @@ private:
 	object scene_obj;
 	i32 max_depth = 16;
 
-	cornell_box def;
+	ps_showcase def;
 };
