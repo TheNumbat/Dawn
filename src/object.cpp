@@ -3,6 +3,12 @@
 
 #include <algorithm>
 
+void trace::transform(m4 trans, m4 norm) {
+
+	pos = (trans * v4(pos, 1.0f)).xyz;
+	normal = (norm * v4(normal, 0.0f)).xyz;
+}
+
 trace trace::min(const trace& l, const trace& r) {
 
 	if(l.hit && r.hit) {
@@ -286,6 +292,33 @@ trace bvh::hit(const ray& r, v2 t) const {
 			}
 		} break;
 		}
+	}
+}
+
+void aabb::transform(m4 trans) {
+
+	// TODO(max): @performance could just use bounding squares that are large
+	// enough to cover the bounding sphere, so rotations can't modify the box
+	// and we don't have to recompute it (just translate/scale the min/max)
+
+	v3 corners[8] = {
+		min,
+		{max.x, min.y, min.z},
+		{min.x, max.y, min.z},
+		{min.x, min.y, max.z},
+		{max.x, max.y, min.z},
+		{min.x, max.y, max.z},
+		{max.x, min.y, max.z},
+		max
+	};
+
+	min = {FLT_MAX};
+	max = {-FLT_MAX};
+
+	for(const v3& v : corners) {
+		v3 t = (trans * v4(v, 1.0f)).xyz;
+		min = vmin(min, t);
+		max = vmax(max, t);
 	}
 }
 

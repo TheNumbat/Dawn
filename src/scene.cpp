@@ -224,8 +224,8 @@ object cornell_box::init(i32 w, i32 h) {
 	objs.push(object::rect(white, plane::zx, {0.0f, 555.0f}, {0.0f, 555.0f}, 0.0f));
 	objs.push(object::rect(white, plane::xy, {0.0f, 555.0f}, {0.0f, 555.0f}, 555.0f, true));
 
-	objs.push(object::box(white, {130.0f, 0.0f, 65.0f}, {295.0f, 165.0f, 230.0f}));
-	objs.push(object::box(white, {265.0f, 0.0f, 295.0f}, {430.0f, 330.0f, 460.0f}));
+	objs.push(object::box(white, {}, {165.0f, 165.0f, 165.0f}, translate({130.0f, 0.0f, 65.0f}) * rotate(-18.0f, {0.0f, 1.0f, 0.0f})));
+	objs.push(object::box(white, {}, {165.0f, 330.0f, 165.0f}, translate({265.0f, 0.0f, 295.0f}) * rotate(15.0f, {0.0f, 1.0f, 0.0f})));
 
 	object ret = object::bvh(objs, cam.time);
 	objs.destroy();

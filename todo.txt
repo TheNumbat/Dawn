@@ -21,6 +21,8 @@ Features
 
 Optimizations
 	General
+		push transformations to leaf objects
+		
 		don't calculate position + normal for each nearer object, instead store object ID
 		  and calculate after we have found the nearest object.
 

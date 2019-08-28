@@ -323,6 +323,7 @@ union v4 {
 	struct {
 		f32 x, y, z, w;
 	};
+	v3 xyz;
 	__m128 v;
 	f32 a[4] = {};
 
@@ -392,17 +393,6 @@ struct rand_state {
 	u32 z = 521288629;
 };
 extern rand_state __state;
-
-struct ray {
-	v3 pos, dir;
-	f32 t = 0.0f;
-	v3 get(f32 d) const;
-};
-
-struct ray_lane {
-	v3_lane pos, dir;
-	v3_lane get(const f32_lane& t) const;
-};
 
 std::ostream& operator<<(std::ostream& out, const v3 r);
 std::ostream& VEC operator<<(std::ostream& out, const v3_lane& r);
@@ -1170,14 +1160,6 @@ inline v3_lane VEC cross(const v3_lane& l, const v3_lane& r) {
 			f32_lane{__mul_ps(l.y,r.x)}};
 }
 
-inline v3 ray::get(f32 d) const {
-	return pos + d * dir;
-}
-
-inline v3_lane ray_lane::get(const f32_lane& t) const {
-	return pos + t * dir;
-}
-
 inline u32 randomu() {
 	u32 t;
 	__state.x ^= __state.x << 16;
@@ -1446,6 +1428,7 @@ inline m4 VEC translate(v3 v) {
 }
 inline m4 VEC rotate(f32 a, v3 axis) {
 	m4 ret;
+	
 	f32 c = cosf(RADIANS(a));
 	f32 s = sinf(RADIANS(a));
 	
@@ -1506,6 +1489,8 @@ inline m4 VEC look_at(v3 pos, v3 at, v3 up) {
 #define VecShuffle(vec1, vec2, x,y,z,w)    _mm_shuffle_ps(vec1, vec2, MakeShuffleMask(x,y,z,w))
 #define VecShuffle_0101(vec1, vec2)        _mm_movelh_ps(vec1, vec2)
 #define VecShuffle_2323(vec1, vec2)        _mm_movehl_ps(vec2, vec1)
+#define SMALL_NUMBER		(1.e-8f)
+
 inline __m128 VEC Mat2Mul(__m128 vec1, __m128 vec2)
 {
 	return
@@ -1525,16 +1510,55 @@ inline __m128 VEC Mat2MulAdj(__m128 vec1, __m128 vec2)
 		_mm_sub_ps(_mm_mul_ps(                     vec1, VecSwizzle(vec2, 3,0,3,0)),
 		           _mm_mul_ps(VecSwizzle(vec1, 1,0,3,2), VecSwizzle(vec2, 2,1,2,1)));
 }
-inline m4 VEC inverse(m4 inM)
+
+inline m4 VEC inverse_transform(const m4& m)
 {
-	__m128 A = VecShuffle_0101(inM.v[0], inM.v[1]);
-	__m128 B = VecShuffle_2323(inM.v[0], inM.v[1]);
-	__m128 C = VecShuffle_0101(inM.v[2], inM.v[3]);
-	__m128 D = VecShuffle_2323(inM.v[2], inM.v[3]);
+	m4 r;
+
+	// transpose 3x3, we know m03 = m13 = m23 = 0
+	__m128 t0 = VecShuffle_0101(m.v[0], m.v[1]); // 00, 01, 10, 11
+	__m128 t1 = VecShuffle_2323(m.v[0], m.v[1]); // 02, 03, 12, 13
+	r.v[0] = VecShuffle(t0, m.v[2], 0,2,0,3); // 00, 10, 20, 23(=0)
+	r.v[1] = VecShuffle(t0, m.v[2], 1,3,1,3); // 01, 11, 21, 23(=0)
+	r.v[2] = VecShuffle(t1, m.v[2], 0,2,2,3); // 02, 12, 22, 23(=0)
+
+	// (SizeSqr(v[0]), SizeSqr(v[1]), SizeSqr(v[2]), 0)
+	__m128 sizeSqr;
+	sizeSqr =                     _mm_mul_ps(r.v[0], r.v[0]);
+	sizeSqr = _mm_add_ps(sizeSqr, _mm_mul_ps(r.v[1], r.v[1]));
+	sizeSqr = _mm_add_ps(sizeSqr, _mm_mul_ps(r.v[2], r.v[2]));
+
+	// optional test to avoid divide by 0
+	__m128 one = _mm_set1_ps(1.0f);
+	// for each component, if(sizeSqr < SMALL_NUMBER) sizeSqr = 1;
+	__m128 rSizeSqr = _mm_blendv_ps(
+		_mm_div_ps(one, sizeSqr),
+		one,
+		_mm_cmplt_ps(sizeSqr, _mm_set1_ps(SMALL_NUMBER))
+		);
+
+	r.v[0] = _mm_mul_ps(r.v[0], rSizeSqr);
+	r.v[1] = _mm_mul_ps(r.v[1], rSizeSqr);
+	r.v[2] = _mm_mul_ps(r.v[2], rSizeSqr);
+
+	// last line
+	r.v[3] =                       _mm_mul_ps(r.v[0], VecSwizzle1(m.v[3], 0));
+	r.v[3] = _mm_add_ps(r.v[3], _mm_mul_ps(r.v[1], VecSwizzle1(m.v[3], 1)));
+	r.v[3] = _mm_add_ps(r.v[3], _mm_mul_ps(r.v[2], VecSwizzle1(m.v[3], 2)));
+	r.v[3] = _mm_sub_ps(_mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f), r.v[3]);
+
+	return r;
+}
+inline m4 VEC inverse(m4 m)
+{
+	__m128 A = VecShuffle_0101(m.v[0], m.v[1]);
+	__m128 B = VecShuffle_2323(m.v[0], m.v[1]);
+	__m128 C = VecShuffle_0101(m.v[2], m.v[3]);
+	__m128 D = VecShuffle_2323(m.v[2], m.v[3]);
 
 	__m128 detSub = _mm_sub_ps(
-		_mm_mul_ps(VecShuffle(inM.v[0], inM.v[2], 0,2,0,2), VecShuffle(inM.v[1], inM.v[3], 1,3,1,3)),
-		_mm_mul_ps(VecShuffle(inM.v[0], inM.v[2], 1,3,1,3), VecShuffle(inM.v[1], inM.v[3], 0,2,0,2))
+		_mm_mul_ps(VecShuffle(m.v[0], m.v[2], 0,2,0,2), VecShuffle(m.v[1], m.v[3], 1,3,1,3)),
+		_mm_mul_ps(VecShuffle(m.v[0], m.v[2], 1,3,1,3), VecShuffle(m.v[1], m.v[3], 0,2,0,2))
 	);
 	__m128 detA = VecSwizzle1(detSub, 0);
 	__m128 detB = VecSwizzle1(detSub, 1);
@@ -1555,7 +1579,7 @@ inline m4 VEC inverse(m4 inM)
 	tr = _mm_hadd_ps(tr, tr);
 	detM = _mm_sub_ps(detM, tr);
 
-	const __m128 adjSignMask = _mm_setr_ps(1.f, -1.f, -1.f, 1.f);
+	const __m128 adjSignMask = _mm_setr_ps(1.0f, -1.0f, -1.0f, 1.0f);
 	__m128 rDetM = _mm_div_ps(adjSignMask, detM);
 
 	X_ = _mm_mul_ps(X_, rDetM);
@@ -1570,6 +1594,28 @@ inline m4 VEC inverse(m4 inM)
 	r.v[3] = VecShuffle(Z_, W_, 2,0,2,0);
 	return r;
 }
+
+struct ray {
+	v3 pos, dir;
+	f32 t = 0.0f;
+
+	v3 get(f32 d) const {
+		return pos + d * dir;
+	}
+
+	void transform(m4 tr) {
+		pos = (tr * v4(pos, 1.0f)).xyz;
+		dir = (tr * v4(dir, 0.0f)).xyz;
+	}
+};
+
+struct ray_lane {
+	v3_lane pos, dir;
+
+	v3_lane get(const f32_lane& t) const {
+		return pos + t * dir;
+	}
+};
 
 #ifdef MATH_IMPLEMENTATION
 

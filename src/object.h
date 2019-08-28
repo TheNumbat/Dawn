@@ -35,6 +35,7 @@ struct trace {
 	v3 pos, normal;
 
 	static trace min(const trace& l, const trace& r);
+	void transform(m4 trans, m4 norm);
 };
 
 struct aabb {
@@ -43,6 +44,7 @@ struct aabb {
 
 	static aabb enclose(const aabb& l, const aabb& r);
 	bool hit(const ray& incoming, v2 t) const;
+	void transform(m4 trans);
 };
 
 struct rect {
@@ -140,7 +142,6 @@ struct sphere_moving {
 	static sphere_moving make(v3 p0, v3 p1, f32 r, i32 m, v2 t);
 	void destroy() {}
 
-
 	aabb bbox(v2 t) const;
 	trace hit(const ray& r, v2 t) const;
 
@@ -186,8 +187,8 @@ private:
 struct object {
 	obj type = obj::none;
 
-	m4 transform;
-	bool do_transform = false;
+	m4 trans, itrans;
+	bool do_trans = false;
 
 	union {
 		bvh b;
@@ -242,37 +243,51 @@ struct object {
 		ret.sl = sphere_lane::make(pos,rad,mat);
 		return ret;
 	}
-	trace hit(const ray& r, v2 t) const {
+	trace hit(ray r, v2 t) const {
+
+		if(do_trans) r.transform(itrans);
+
+		trace ret;
+
 		switch(type) {
-		case obj::bvh: return b.hit(r, t);
-		case obj::list: return l.hit(r, t);
-		case obj::sphere: return s.hit(r, t);
-		case obj::sphere_lane: return sl.hit(r, t);
-		case obj::sphere_moving: return sm.hit(r, t);
-		case obj::rect: return re.hit(r, t);
-		case obj::box: return bx.hit(r, t);
+		case obj::bvh: ret = b.hit(r, t); break;
+		case obj::box: ret = bx.hit(r, t); break;
+		case obj::list: ret = l.hit(r, t); break;
+		case obj::rect: ret = re.hit(r, t); break;
+		case obj::sphere: ret = s.hit(r, t); break;
+		case obj::sphere_lane: ret = sl.hit(r, t); break;
+		case obj::sphere_moving: ret = sm.hit(r, t); break;
 		default: assert(false);
 		}
-		return {};
+
+		if(do_trans) ret.transform(trans, transpose(itrans));
+
+		return ret;
 	}
 	aabb bbox(v2 t) const {
+
+		aabb ret;
 		switch(type) {
-		case obj::bvh: return b.bbox(t);
-		case obj::list: return l.bbox(t);
-		case obj::sphere: return s.bbox(t);
-		case obj::sphere_lane: return sl.bbox(t);
-		case obj::sphere_moving: return sm.bbox(t);
-		case obj::rect: return re.bbox(t);
-		case obj::box: return bx.bbox(t);
+		case obj::bvh: ret = b.bbox(t); break;
+		case obj::box: ret = bx.bbox(t); break;
+		case obj::list: ret = l.bbox(t); break;
+		case obj::rect: ret = re.bbox(t); break;
+		case obj::sphere: ret = s.bbox(t); break;
+		case obj::sphere_lane: ret = sl.bbox(t); break;
+		case obj::sphere_moving: ret = sm.bbox(t); break;
 		default: assert(false);
 		}
-		return {};
+
+		if(do_trans) ret.transform(trans);
+
+		return ret;
 	}
 	
 	object(obj o, m4 t) {
 		type = o;
-		transform = t;
-		do_transform = t != m4::I;
+		trans = t;
+		do_trans = t != m4::I;
+		if(do_trans) itrans = inverse_transform(t);
 	}
 	object() {memset(this,0,sizeof(object));}
 	object(const object& o) {memcpy(this,&o,sizeof(object));}
