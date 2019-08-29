@@ -191,20 +191,20 @@ object basic_scene::init(i32 w, i32 h) {
 	sphere_lane_builder builder;
 
 	builder.push(object::sphere(lamb0, {0.0f, -1000.0f, 0.0f}, 1000.0f));
-	builder.push(object::sphere(dia0, {0.0f, 1.0f, 0.0f}, 1.0f));
+	builder.push(object::sphere(dia0, {4.0f, 1.0f, 0.0f}, 1.0f));
 	builder.push(object::sphere(met0, {-4.0f, 1.0f, 0.0f}, 1.0f));
-	builder.push(object::sphere(lamb1, {4.0f, 1.0f, 0.0f}, 1.0f));
+	builder.push(object::sphere(lamb1, {0.0f, 1.0f, 0.0f}, 1.0f));
 
 	vec<object> objs;
 
 	objs.push(builder.finish());
 
-	light = mats.add(material::diffuse(texture::constant({7.0f})));
-	objs.push(object::rect(light, plane::zx, {-3.0f, 3.0f}, {-3.0f, 3.0f}, 6.0f));
+	light = mats.add(material::diffuse(texture::constant({1.0f})));
+	objs.push(object::rect(light, plane::zx, {-20.0f, 20.0f}, {-20.0f, 20.0f}, 6.0f));
 
-	bound = object::sphere(0, {}, 5000.0f);
-	vol = mats.add(material::isotropic(texture::constant({1.0f})));
-	objs.push(object::volume(vol, 0.01f, &bound));
+	// bound = object::sphere(0, {}, 5000.0f);
+	// vol = mats.add(material::isotropic(texture::constant({1.0f})));
+	// objs.push(object::volume(vol, 0.01f, &bound));
 
 	return object::list(objs);
 }
@@ -287,7 +287,7 @@ void planet_scene::destroy() {
 
 object ps_showcase::init(i32 w, i32 h) {
 
-	cam.init({278.0f, 278.0f, -700.0f}, {220.0f, 240.0f, 300.0f}, w, h, 45.0f, 0.0f, {0.0f, 1.0f});
+	cam.init({278.0f, 278.0f, -700.0f}, {220.0f, 240.0f, 300.0f}, w, h, 45.0f, 0.0f, {0.0f, 0.0f});
 	mats.clear();
 
 	vec<object> objs;
@@ -306,14 +306,14 @@ object ps_showcase::init(i32 w, i32 h) {
 		}
 	}
 
-	light = mats.add(material::diffuse(texture::constant({7.0f})));
+	light = mats.add(material::diffuse(texture::constant({4.0f})));
 
-	objs.push(object::rect(light, plane::zx, {147.0f, 412.0f}, {123.0f, 423.0f}, 554.0f));
+	objs.push(object::rect(light, plane::zx, {107.0f, 452.0f}, {83.0f, 463.0f}, 554.0f));
 
 	v3 center(400.0f, 400.0f, 200.0f);
 
 	moving = mats.add(material::lambertian(texture::constant({0.7f, 0.3f, 0.1f})));
-	mtl    = mats.add(material::metal({0.8f, 0.8f, 0.9f}, 1.0f));
+	mtl    = mats.add(material::metal({0.8f, 0.8f, 0.9f}, 0.5f));
 	dial   = mats.add(material::dielectric(1.5f));
 
 	objs.push(object::sphere_moving(moving, center, center + v3{30.0f, 0.0f, 0.0f}, 50.0f, {0.0f, 1.0f}));
@@ -329,8 +329,8 @@ object ps_showcase::init(i32 w, i32 h) {
 	vol0 = mats.add(material::isotropic(texture::constant({0.2f, 0.4f, 0.9f})));
 	vol1 = mats.add(material::isotropic(texture::constant({1.0f})));
 
-	objs.push(object::volume(vol0, 0.2f, &bound0));
-	objs.push(object::volume(vol1, 0.0001f, &bound1));
+	objs.push(object::volume(vol0, 0.3f, &bound0));
+	// objs.push(object::volume(vol1, 0.0005f, &bound1));
 
 	mars  = mats.add(material::lambertian(texture::image("mars.jpg")));
 	noise = mats.add(material::lambertian(texture::noise({}, 0.1f)));

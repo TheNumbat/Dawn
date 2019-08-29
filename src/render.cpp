@@ -35,10 +35,21 @@ u64 renderer::begin_render(const scene& s) {
 
 	clear();
 
-	i32 w_blocks = width / Block_Size;
-	i32 h_blocks = height / Block_Size;
-	i32 w_remaining = width % Block_Size;
-	i32 h_remaining = height % Block_Size;
+	i32 w = width;
+	i32 h = height;
+	i32 x0 = 0, y0 = 0;
+	
+	if(region) {
+		w = r_w;
+		h = r_h;
+		x0 = r_x;
+		y0 = r_y;
+	}
+
+	i32 w_blocks = w / Block_Size;
+	i32 h_blocks = h / Block_Size;
+	i32 w_remaining = w % Block_Size;
+	i32 h_remaining = h % Block_Size;
 
 	tasks_complete = 0;
 	total_tasks = 0;
@@ -46,7 +57,7 @@ u64 renderer::begin_render(const scene& s) {
 	for(i32 y = 0; y <= h_blocks; y++) {
 		for(i32 x = 0; x <= w_blocks; x++) {
 
-			thread_data t = {data, &s, x * Block_Size, y * Block_Size,
+			thread_data t = {data, &s, x0 + x * Block_Size, y0 + y * Block_Size,
 							 x == w_blocks ? w_remaining : Block_Size, 
 							 y == h_blocks ? h_remaining : Block_Size,
 							 samples, width, height};
@@ -82,7 +93,19 @@ f32 renderer::progress() {
 	return (f32)tasks_complete.load() / total_tasks;
 }
 
+void renderer::set_region(bool enable, i32 x, i32 y, i32 w, i32 h) {
+
+	assert(x + w <= width && y + h <= height);
+
+	region = enable;
+	r_x = x;
+	r_y = y;
+	r_w = w;
+	r_h = h;
+}
+
 void renderer::init(i32 w, i32 h, i32 s, bool use_ogl) {
+	
 	width = w;
 	height = h;
 	samples = s;

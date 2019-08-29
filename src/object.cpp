@@ -156,7 +156,8 @@ trace rect::hit(const ray& r, v2 t) const {
 	ret.pos = at;
 
 	// NOTE(max): double sided plane
-	ret.normal[w_idx] = dot(ret.normal, r.dir) > 0.0f ? 1.0f : -1.0f;
+	ret.normal[w_idx] = 1.0f;
+	ret.normal[w_idx] = dot(ret.normal, r.dir) < 0.0f ? 1.0f : -1.0f;
 
 	return ret;
 }

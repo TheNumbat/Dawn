@@ -25,10 +25,21 @@ i32 cli_main(i32 argc, char** argv) {
 	i32 s = get(int,"s");
 	std::string o = get(std::string,"o");
 
+	bool region = false;
+	i32 x = 0, y = 0, rw = 0, rh = 0;
+	if(args.get<int>("x")) {
+		x = get(int,"x");
+		y = get(int,"y");
+		rw = get(int,"rw");
+		rh = get(int,"rh");
+		region = true;
+	}
+
 	std::cout << "Initializing renderer..." << std::endl;
 
 	renderer result;
 	result.init(w,h,s,false);
+	result.set_region(region, x, y, rw, rh);
 
 	std::cout << "Building scene..." << std::endl;
 
@@ -115,7 +126,10 @@ void gui_main() {
 
 	ImGui::GetStyle().WindowRounding = 0.0f;
 
+	bool do_region = false;
 	i32 size[3] = {640,480,8};
+	i32 region[4] = {220,270,150,150};
+
 	u64 time = 0, start = 0;
 	std::string file = "output.png";
 	file.resize(100);
@@ -157,6 +171,9 @@ void gui_main() {
 
 		ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
 		ImGui::InputInt3("Size", size);
+		ImGui::Checkbox("##do_region", &do_region);
+		ImGui::SameLine();
+		ImGui::InputInt4("Region", region);
 		ImGui::InputText("##file",(char*)file.c_str(),file.size());
 		ImGui::SameLine();
 		if(ImGui::Button("Save")) {
@@ -169,6 +186,7 @@ void gui_main() {
 
 			s.init(size[0], size[1]);
 			result.init(size[0], size[1], size[2]);
+			result.set_region(do_region, region[0], region[1], region[2], region[3]);
 
 			start = result.begin_render(s);
 		}

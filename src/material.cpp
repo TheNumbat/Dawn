@@ -36,12 +36,7 @@ lambertian lambertian::make(texture t) {
 
 scatter lambertian::bsdf(const ray& incoming, const trace& surface) const {
 	scatter ret;
-
-	// Flip normal when we hit the surface from the backface
-	v3 normal = surface.normal, dir = norm(incoming.dir);
-	if(dot(normal, dir) > 0.0f) normal = -normal;
-
-	v3 out = surface.pos + normal + random_leunit();
+	v3 out = surface.pos + surface.normal + random_leunit();
 	ret.out = {surface.pos, out - surface.pos, incoming.t};
 	ret.attenuation = tex.sample(surface.uv, surface.pos);
 	return ret;
@@ -95,26 +90,29 @@ scatter dielectric::bsdf(const ray& incoming, const trace& surface) const {
 	v3 n_out;
 	f32 iout_iin, cos;
 
-	f32 idn = dot(incoming.dir, surface.normal);
+	f32 idn = dot(norm(incoming.dir), surface.normal);
 	if(idn > 0.0f) {
 		iout_iin = index;
 		n_out = -surface.normal;
-		cos = index * idn / len(incoming.dir);
+		
+		cos = idn;
+		cos = sqrtf(1.0f - index * index * (1.0f - cos * cos));
+
 	} else {
 		iout_iin = 1.0f / index;
 		n_out = surface.normal;
-		cos = -idn / len(incoming.dir);
+		cos = -idn;
 	}
 
-	f32 refract_prob;
+	f32 reflect_prob;
 	refract_ refracted = refract(incoming.dir, n_out, iout_iin);
 	if(!refracted.internal) {
-		refract_prob = schlick(cos);
+		reflect_prob = schlick(cos);
 	} else {
-		refract_prob = 1.0f;
+		reflect_prob = 1.0f;
 	}
 
-	if(randomf() < refract_prob) {
+	if(randomf() < reflect_prob) {
 		ret.out = {surface.pos, reflected, incoming.t};
 	} else {
 		ret.out = {surface.pos, refracted.out, incoming.t};
