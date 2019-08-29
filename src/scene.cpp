@@ -313,7 +313,7 @@ object ps_showcase::init(i32 w, i32 h) {
 	v3 center(400.0f, 400.0f, 200.0f);
 
 	moving = mats.add(material::lambertian(texture::constant({0.7f, 0.3f, 0.1f})));
-	mtl    = mats.add(material::metal({0.8f, 0.8f, 0.9f}, 10.0f));
+	mtl    = mats.add(material::metal({0.8f, 0.8f, 0.9f}, 1.0f));
 	dial   = mats.add(material::dielectric(1.5f));
 
 	objs.push(object::sphere_moving(moving, center, center + v3{30.0f, 0.0f, 0.0f}, 50.0f, {0.0f, 1.0f}));

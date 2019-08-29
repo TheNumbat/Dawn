@@ -56,7 +56,7 @@ metal metal::make(v3 p, f32 r) {
 
 scatter metal::bsdf(const ray& incoming, const trace& surface) const {
 	scatter ret;
-	v3 r = reflect(norm(incoming.dir),surface.normal);
+	v3 r = reflect(norm(incoming.dir), surface.normal);
 	ret.out = {surface.pos, r + rough * random_leunit(), incoming.t};
 	ret.absorbed = dot(r, surface.normal) <= 0.0f;
 	ret.attenuation = albedo;
@@ -95,15 +95,15 @@ scatter dielectric::bsdf(const ray& incoming, const trace& surface) const {
 	v3 n_out;
 	f32 iout_iin, cos;
 
-	f32 idn = dot(norm(incoming.dir), surface.normal);
+	f32 idn = dot(incoming.dir, surface.normal);
 	if(idn > 0.0f) {
 		iout_iin = index;
 		n_out = -surface.normal;
-		cos = index * idn;
+		cos = index * idn / len(incoming.dir);
 	} else {
 		iout_iin = 1.0f / index;
 		n_out = surface.normal;
-		cos = -idn;
+		cos = -idn / len(incoming.dir);
 	}
 
 	f32 refract_prob;
