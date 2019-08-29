@@ -195,7 +195,18 @@ object basic_scene::init(i32 w, i32 h) {
 	builder.push(object::sphere(met0, {-4.0f, 1.0f, 0.0f}, 1.0f));
 	builder.push(object::sphere(lamb1, {4.0f, 1.0f, 0.0f}, 1.0f));
 
-	return builder.finish();
+	vec<object> objs;
+
+	objs.push(builder.finish());
+
+	light = mats.add(material::diffuse(texture::constant({7.0f})));
+	objs.push(object::rect(light, plane::zx, {-3.0f, 3.0f}, {-3.0f, 3.0f}, 6.0f));
+
+	bound = object::sphere(0, {}, 5000.0f);
+	vol = mats.add(material::isotropic(texture::constant({1.0f})));
+	objs.push(object::volume(vol, 0.01f, &bound));
+
+	return object::list(objs);
 }
 
 void basic_scene::destroy() {

@@ -1,10 +1,5 @@
 TODO:
 
-Final Scene
-	fog inside another object doesn't work
-	global fog is gone
-	looks like starting inside volume doesn't work
-
 Resources:
 	reading PBRT
 	raytracing the rest of your life

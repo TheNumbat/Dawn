@@ -92,7 +92,7 @@ trace volume::hit(const ray& r, v2 t) const {
 			if(h < d) {
 
 				ret.hit = true;
-				ret.t = b1.t + h / dlen;
+				ret.t = b0.t + h / dlen;
 				ret.pos = r.get(ret.t);
 				ret.mat = phase_mat;
 			}
