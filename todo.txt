@@ -1,9 +1,5 @@
 TODO:
 
-Resources:
-	reading PBRT
-	raytracing the rest of your life
-
 Priority
 	PBRT
 	progressive rendering/sampling

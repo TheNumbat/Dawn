@@ -287,7 +287,7 @@ void planet_scene::destroy() {
 
 object ps_showcase::init(i32 w, i32 h) {
 
-	cam.init({278.0f, 278.0f, -800.0f}, {278.0f, 278.0f, 0.0f}, w, h, 50.0f, 0.0f, {0.0f, 1.0f});
+	cam.init({278.0f, 278.0f, -700.0f}, {220.0f, 240.0f, 300.0f}, w, h, 45.0f, 0.0f, {0.0f, 1.0f});
 	mats.clear();
 
 	vec<object> objs;
