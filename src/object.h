@@ -266,7 +266,7 @@ struct object {
 
 	trace hit(ray r, v2 t) const {
 
-		if(do_trans) r.transform(itrans);
+		// if(do_trans) r.transform(itrans);
 
 		trace ret;
 
@@ -282,7 +282,7 @@ struct object {
 		default: assert(false);
 		}
 
-		if(do_trans) ret.transform(trans, transpose(itrans));
+		// if(do_trans) ret.transform(trans, transpose(itrans));
 
 		return ret;
 	}
@@ -301,7 +301,7 @@ struct object {
 		default: assert(false);
 		}
 
-		if(do_trans) ret.transform(trans);
+		// if(do_trans) ret.transform(trans);
 
 		return ret;
 	}

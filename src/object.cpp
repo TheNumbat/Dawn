@@ -420,15 +420,15 @@ trace sphere::hit(const ray& r, v2 t) const {
 	trace ret;
 	v3 rel_pos = r.pos - pos;
 	f32 a = lensq(r.dir);
-	f32 b = 2.0f * dot(rel_pos, r.dir);
+	f32 b = dot(rel_pos, r.dir);
 	f32 c = lensq(rel_pos) - rad*rad;
-	f32 d = b*b - 4*a*c;
+	f32 d = b*b - a*c;
 
 	if(d <= 0.0f) return ret;
 
 	f32 sqd = sqrtf(d);
 
-	f32 result = (-b - sqd) / (2.0f * a);
+	f32 result = (-b - sqd) / a;
 	if(result <= t.y && result >= t.x) {
 		ret.hit = true;
 		ret.mat = mat;
@@ -439,7 +439,7 @@ trace sphere::hit(const ray& r, v2 t) const {
 		return ret;
 	} 
 	
-	result = (-b + sqd) / (2.0f * a);
+	result = (-b + sqd) / a;
 	if(result <= t.y && result >= t.x) {
 		ret.hit = true;
 		ret.mat = mat;
@@ -505,17 +505,17 @@ trace sphere_lane::hit(const ray& r, v2 t) const {
 	
 	v3_lane rel_pos = r.pos - pos;
 	f32_lane a = lensq(r.dir);
-	f32_lane b = 2.0f * dot(rel_pos, r.dir);
+	f32_lane b = dot(rel_pos, r.dir);
 	f32_lane c = lensq(rel_pos) - rad*rad;
-	f32_lane d = b*b - 4.0f*a*c;
+	f32_lane d = b*b - a*c;
 
 	f32_lane pos_mask = d > 0.0f;
 	if(none(pos_mask)) return ret;
 
 	f32_lane sqd = sqrt(d);
 
-	f32_lane pos_t = (-b - sqd) / (2.0f * a);
-	f32_lane neg_t = (-b + sqd) / (2.0f * a);
+	f32_lane pos_t = (-b - sqd) / a;
+	f32_lane neg_t = (-b + sqd) / a;
 	f32_lane pos_t_mask = (pos_t <= t.y) & (pos_t >= t.x);
 	f32_lane neg_t_mask = (neg_t <= t.y) & (neg_t >= t.x);
 	

@@ -128,7 +128,7 @@ void gui_main() {
 
 	bool do_region = false;
 	i32 size[3] = {640,480,8};
-	i32 region[4] = {220,270,150,150};
+	i32 region[4] = {190,240,210,220};
 
 	u64 time = 0, start = 0;
 	std::string file = "output.png";

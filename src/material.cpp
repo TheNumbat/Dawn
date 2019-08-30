@@ -112,11 +112,11 @@ scatter dielectric::bsdf(const ray& incoming, const trace& surface) const {
 		reflect_prob = 1.0f;
 	}
 
-	if(randomf() < reflect_prob) {
-		ret.out = {surface.pos, reflected, incoming.t};
-	} else {
+	// if(randomf() < reflect_prob) {
+	// 	ret.out = {surface.pos, reflected, incoming.t};
+	// } else {
 		ret.out = {surface.pos, refracted.out, incoming.t};
-	}
+	// }
 	ret.attenuation = v3(1.0f);
 	return ret;
 }

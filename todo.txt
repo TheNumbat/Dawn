@@ -1,6 +1,7 @@
 TODO:
 
 Priority
+	better progress bar
 	PBRT
 	progressive rendering/sampling
 	general optimizations
