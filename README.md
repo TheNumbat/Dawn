@@ -1,6 +1,6 @@
 # Dawn
 
-![shot0](https://i.imgur.com/0qjUOQN.png)
+![shot0](https://i.imgur.com/9KcH9sZ.png)
 ![shot1](https://i.imgur.com/b93N7Xh.png)
 
 Learning about path tracing. Focusing on realism + performance, hopefully with a result of creating a really high-quality path tracer for CMU 15462.
