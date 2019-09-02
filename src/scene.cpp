@@ -69,7 +69,7 @@ v3 scene::compute(const ray& r_) const {
 	
 	while(depth < max_depth) {
 		
-		trace t = scene_obj.hit(r, {0.0001f, FLT_MAX});
+		trace t = scene_obj.hit(r, {0.001f, FLT_MAX});
 		if(t.hit) {
 
 			scatter s = def.mats.get(t.mat)->bsdf(r, t);
