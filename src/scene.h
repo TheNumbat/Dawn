@@ -48,7 +48,7 @@ struct basic_scene {
 	materal_cache mats;
 
 private:
-	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0, light = 0, vol = 0;
+	i32 lamb0 = 0, lamb1 = 0, met0 = 0, dia0 = 0, light = 0;
 	object bound;
 };
 

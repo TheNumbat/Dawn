@@ -202,10 +202,6 @@ object basic_scene::init(i32 w, i32 h) {
 	light = mats.add(material::diffuse(texture::constant({1.0f})));
 	objs.push(object::rect(light, plane::zx, {-20.0f, 20.0f}, {-20.0f, 20.0f}, 6.0f));
 
-	// bound = object::sphere(0, {}, 5000.0f);
-	// vol = mats.add(material::isotropic(texture::constant({1.0f})));
-	// objs.push(object::volume(vol, 0.01f, &bound));
-
 	return object::list(objs);
 }
 
@@ -330,7 +326,7 @@ object ps_showcase::init(i32 w, i32 h) {
 	vol1 = mats.add(material::isotropic(texture::constant({1.0f})));
 
 	objs.push(object::volume(vol0, 0.3f, &bound0));
-	// objs.push(object::volume(vol1, 0.0005f, &bound1));
+	objs.push(object::volume(vol1, 0.0005f, &bound1));
 
 	mars  = mats.add(material::lambertian(texture::image("mars.jpg")));
 	noise = mats.add(material::lambertian(texture::noise({}, 0.1f)));
