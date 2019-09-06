@@ -7,6 +7,7 @@
 #include <flags.h>
 
 #include <iostream>
+#include <iomanip>
 #include <chrono>
 #include <thread>
 
@@ -15,6 +16,26 @@
 #include "math.h"
 
 #define get(type,name) (args.get<type>(name) ? *args.get<type>(name) : (std::cout << "Failed to get arg " << name << "!" << std::endl, exit(1), type()))
+
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(__linux__)
+#include <sys/ioctl.h>
+#endif
+
+i32 term_width() {
+	i32 cols = 0;
+#ifdef _WIN32
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+	cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+#elif defined(__linux__)
+	struct winsize w;
+	ioctl(0, TIOCGWINSZ, &w);
+	cols = w.ws_col;
+#endif
+	return cols;
+}
 
 i32 cli_main(i32 argc, char** argv) {
 	
@@ -49,12 +70,28 @@ i32 cli_main(i32 argc, char** argv) {
 	std::cout << "Rendering " << w << "x" << h << "x" << s << " to " << o << "..." << std::endl;
 	u64 start = result.begin_render(sc);
 
+	std::cout << std::fixed << std::setw(2) << std::setprecision(2) << std::setfill('0');
 	while(!result.finish()) {
-		std::cout << "Completed: " << result.progress() * 100.0f << "%" << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::cout << "Progress: [";
+
+		i32 width = std::min(term_width() - 30, 50);
+
+		if(width) {
+			i32 bar = (i32)(width * result.progress());
+			for(i32 i = 0; i < bar; i++) std::cout << "-";
+			for(i32 i = bar; i < width; i++) std::cout << " ";
+			std::cout << "] ";
+		}
+
+		f32 percent = 100.0f * result.progress();
+		if(percent < 10.0f) std::cout << "0";
+		std::cout << percent << "%\r";
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	}
 	u64 end = SDL_GetPerformanceCounter();
 
+	std::cout << std::endl;
 	std::cout << "Finished in " << (f64)(end - start) / SDL_GetPerformanceFrequency() << "s" << std::endl;
 	std::cout << "Writing to file..." << std::endl;
 	result.write_to_file(o);
