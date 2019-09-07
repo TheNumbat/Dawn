@@ -345,28 +345,23 @@ trace bvh::hit(const ray& r, v2 t) const {
 
 void aabb::transform(m4 trans) {
 
-	// TODO(max): @performance could just use bounding squares that are large
-	// enough to cover the bounding sphere, so rotations can't modify the box
-	// and we don't have to recompute it (just translate/scale the min/max)
+	v3 amin = min, amax = max;
+	min = max = trans[3].xyz;
 
-	v3 corners[8] = {
-		min,
-		{max.x, min.y, min.z},
-		{min.x, max.y, min.z},
-		{min.x, min.y, max.z},
-		{max.x, max.y, min.z},
-		{min.x, max.y, max.z},
-		{max.x, min.y, max.z},
-		max
-	};
+	for(i32 i = 0; i < 3; i++) {
+		for(i32 j = 0; j < 3; j++) {
 
-	min = {FLT_MAX};
-	max = {-FLT_MAX};
+			f32 a = trans[j][i] * amin[j];
+			f32 b = trans[j][i] * amax[j];
 
-	for(const v3& v : corners) {
-		v3 t = (trans * v4(v, 1.0f)).xyz;
-		min = vmin(min, t);
-		max = vmax(max, t);
+			if(a < b) {
+				min[i] += a; 
+				max[i] += b;
+			} else {
+				min[i] += b; 
+				max[i] += a;
+			}
+		}
 	}
 }
 

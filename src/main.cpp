@@ -87,6 +87,7 @@ i32 cli_main(i32 argc, char** argv) {
 		if(percent < 10.0f) std::cout << "0";
 		std::cout << percent << "%\r";
 
+		std::cout.flush();
 		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 	}
 	u64 end = SDL_GetPerformanceCounter();
