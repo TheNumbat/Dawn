@@ -95,9 +95,10 @@ f32 renderer::progress() {
 
 void renderer::set_region(bool enable, i32 x, i32 y, i32 w, i32 h) {
 
-	assert(x + w <= width && y + h <= height);
-
 	region = enable;
+	if(!region) return;
+
+	assert(x + w <= width && y + h <= height);
 	r_x = x;
 	r_y = y;
 	r_w = w;
