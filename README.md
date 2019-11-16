@@ -3,7 +3,7 @@
 ![shot0](https://i.imgur.com/9KcH9sZ.png)
 ![shot1](https://i.imgur.com/b93N7Xh.png)
 
-Learning about path tracing. Focusing on realism + performance, hopefully with a result of creating a really high-quality path tracer for CMU 15462.
+Learning about path tracing.
 
 Current features:
 - [Ray Tracing in a Weekend](http://www.realtimerendering.com/raytracing/Ray%20Tracing%20in%20a%20Weekend.pdf)
